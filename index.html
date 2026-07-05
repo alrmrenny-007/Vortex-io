@@ -35,6 +35,8 @@
   --purple: #7C3AED;
   --pink: #E879F9;
   --orange: #FB923C;
+  --text-soft: #D8D6F0;
+  --nav-bg: #0D0D12ee;
   --radius: 16px;
 }
 html.light-theme{
@@ -51,6 +53,8 @@ html.light-theme{
   --purple: #9955F0;
   --pink: #ED8FE0;
   --orange: #FFAE6B;
+  --text-soft: #DCD9C4;
+  --nav-bg: #262B1Aee;
 }
 html.light-theme body{
   background:
@@ -73,7 +77,7 @@ body{
   padding-bottom:84px;
 }
 .mono{font-family:'Space Mono', monospace;}
-::selection{background:var(--yellow); color:#14162B;}
+::selection{background:var(--yellow); color:#000000;}
 
 /* HEADER */
 header.top{
@@ -92,7 +96,7 @@ header.top{
   width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center;
   cursor:pointer; transition:.15s;
 }
-.admin-btn.on{background:var(--yellow); color:#14162B; border-color:var(--yellow);}
+.admin-btn.on{background:var(--yellow); color:#000000; border-color:var(--yellow);}
 .admin-btn:active{transform:scale(.92);}
 .admin-btn.notif-on{background:var(--teal); color:#0e2523; border-color:var(--teal);}
 .header-btns{display:flex; gap:8px;}
@@ -143,7 +147,7 @@ main{padding:4px 16px 24px; max-width:640px; margin:0 auto;}
 /* TABS NAV */
 nav.tabs{
   position:fixed; bottom:0; left:0; right:0; z-index:30;
-  background:#1A1C36ee; backdrop-filter:blur(10px);
+  background:var(--nav-bg); backdrop-filter:blur(10px);
   border-top:1px solid var(--line);
   display:flex; padding:8px 6px calc(8px + env(safe-area-inset-bottom));
 }
@@ -159,7 +163,7 @@ nav.tabs button.active{color:var(--yellow);}
 .sec-head{display:flex; align-items:center; justify-content:space-between; margin:18px 0 10px;}
 .sec-head h2{font-family:'Space Mono',monospace; font-size:15px; margin:0; display:flex; align-items:center; gap:8px;}
 .add-btn{
-  background:var(--yellow); color:#14162B; border:none; border-radius:10px;
+  background:var(--yellow); color:#000000; border:none; border-radius:10px;
   width:34px; height:34px; font-size:18px; font-weight:700; cursor:pointer;
 }
 .add-btn:active{transform:scale(.9);}
@@ -167,7 +171,7 @@ nav.tabs button.active{color:var(--yellow);}
 
 /* announcement */
 .ann-title{font-weight:700; font-size:15.5px; margin:0 0 4px;}
-.ann-body{font-size:13.5px; color:#d8d6f0; line-height:1.5; margin:0 0 8px; white-space:pre-wrap;}
+.ann-body{font-size:13.5px; color:var(--text-soft); line-height:1.5; margin:0 0 8px; white-space:pre-wrap;}
 .ann-foot{display:flex; justify-content:space-between; font-size:11.5px; color:var(--muted);}
 .del-btn{background:none; border:none; color:var(--red); font-size:12px; cursor:pointer; padding:2px 4px;}
 
@@ -177,7 +181,7 @@ nav.tabs button.active{color:var(--yellow);}
 .badge.overdue{background:#FF5C7222; color:var(--red);}
 .badge.soon{background:#FBBF2422; color:#FBBF24;}
 .badge.ok{background:#4ADE8022; color:var(--green);}
-.assign-desc{font-size:13.5px; color:#d8d6f0; margin:8px 0 6px; line-height:1.45;}
+.assign-desc{font-size:13.5px; color:var(--text-soft); margin:8px 0 6px; line-height:1.45;}
 .assign-due{font-size:12px; color:var(--muted); font-family:'Space Mono',monospace;}
 
 /* timetable day selector */
@@ -228,7 +232,7 @@ input:focus, select:focus, textarea:focus{outline:2px solid var(--teal); outline
 .poll-opt button span.pct{position:relative; z-index:1; font-family:'Space Mono',monospace; color:var(--muted); font-size:12px;}
 .poll-meta{font-size:11.5px; color:var(--muted); margin-top:6px;}
 .faq-title{font-weight:700; font-size:15px; margin:0 0 6px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;}
-.faq-content{font-size:13.5px; color:#d8d6f0; line-height:1.5; margin:0 0 8px;}
+.faq-content{font-size:13.5px; color:var(--text-soft); line-height:1.5; margin:0 0 8px;}
 
 /* IMAGE THUMBS + LIGHTBOX */
 .img-thumb{
@@ -265,7 +269,7 @@ input:focus, select:focus, textarea:focus{outline:2px solid var(--teal); outline
 label.f-label{font-size:11.5px; color:var(--muted); display:block; margin:0 0 5px;}
 .field{margin-bottom:12px;}
 button.primary{
-  background:var(--yellow); color:#14162B; border:none; padding:11px; border-radius:12px;
+  background:var(--yellow); color:#000000; border:none; padding:11px; border-radius:12px;
   font-weight:700; font-size:14px; cursor:pointer; width:100%; font-family:'Manrope';
 }
 button.ghost{
@@ -275,7 +279,7 @@ button.ghost{
 
 /* MODAL */
 .overlay{
-  position:fixed; inset:0; background:#0a0b1a99; backdrop-filter:blur(3px);
+  position:fixed; inset:0; background:#000000b3; backdrop-filter:blur(3px);
   display:flex; align-items:flex-end; justify-content:center; z-index:100;
 }
 .modal{
