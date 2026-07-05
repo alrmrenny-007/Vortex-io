@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Vortex.io — Class Portal</title>
+<meta name="theme-color" content="#000000" />
+<meta name="description" content="Announcements, assignments, timetable, materials and CGPA calculator for Vortex.io" />
+<link rel="manifest" href="/manifest.json" />
+<link rel="icon" href="/icon-192.png" />
+<link rel="apple-touch-icon" href="/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Vortex.io" />
+<script>
+  try{
+    var t = localStorage.getItem('theme');
+    if(t === 'light') document.documentElement.classList.add('light-theme');
+  }catch(e){}
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root{
+  --bg: #000000;
+  --bg-elev: #0D0D12;
+  --bg-elev-2: #17171F;
+  --line: #2A2A3699;
+  --text: #F5F3FF;
+  --muted: #8F8DA8;
+  --yellow: #A855F7;
+  --teal: #22D3C0;
+  --red: #FF5C72;
+  --green: #4ADE80;
+  --purple: #7C3AED;
+  --pink: #E879F9;
+  --orange: #FB923C;
+  --radius: 16px;
+}
+html.light-theme{
+  --bg: #1D2013;
+  --bg-elev: #262B1A;
+  --bg-elev-2: #2F3521;
+  --line: #454C34;
+  --text: #F1EFE4;
+  --muted: #A6A98F;
+  --yellow: #B57BFA;
+  --teal: #4DD8C4;
+  --red: #FF6F7E;
+  --green: #7BE39A;
+  --purple: #9955F0;
+  --pink: #ED8FE0;
+  --orange: #FFAE6B;
+}
+html.light-theme body{
+  background:
+    radial-gradient(circle at 15% 0%, #35301f, transparent 45%),
+    radial-gradient(circle at 90% 10%, #2a2038, transparent 40%),
+    var(--bg);
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  background:
+    radial-gradient(circle at 15% 0%, #3b115599, transparent 45%),
+    radial-gradient(circle at 90% 10%, #1a0b3d99, transparent 40%),
+    var(--bg);
+  color:var(--text);
+  font-family:'Manrope', sans-serif;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  padding-bottom:84px;
+}
+.mono{font-family:'Space Mono', monospace;}
+::selection{background:var(--yellow); color:#14162B;}
+
+/* HEADER */
+header.top{
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 18px 14px;
+  background:linear-gradient(180deg, var(--bg) 70%, transparent);
+  backdrop-filter: blur(6px);
+}
+.brand{display:flex; flex-direction:column; gap:2px;}
+.brand .prompt{color:var(--teal); font-size:12px; letter-spacing:.5px;}
+.brand h1{margin:0; font-size:19px; font-family:'Space Mono',monospace; letter-spacing:.5px;}
+.brand .sub{font-size:12px; color:var(--muted);}
+.admin-btn{
+  background:var(--bg-elev); border:1px solid var(--line); color:var(--muted);
+  width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:.15s;
+}
+.admin-btn.on{background:var(--yellow); color:#14162B; border-color:var(--yellow);}
+.admin-btn:active{transform:scale(.92);}
+.admin-btn.notif-on{background:var(--teal); color:#0e2523; border-color:var(--teal);}
+.header-btns{display:flex; gap:8px;}
+
+main{padding:4px 16px 24px; max-width:640px; margin:0 auto;}
+
+/* CARD */
+.card{
+  background:var(--bg-elev);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:16px;
+  margin-bottom:12px;
+  position:relative;
+  overflow:hidden;
+}
+.card .accent-bar{position:absolute; left:0; top:0; bottom:0; width:4px;}
+
+/* TODAY TAB */
+.hero{
+  background:linear-gradient(135deg, var(--bg-elev-2), var(--bg-elev));
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:20px;
+  margin:10px 0 18px;
+}
+.hero .cmd{color:var(--teal); font-size:12px; margin-bottom:8px;}
+.hero .day{font-family:'Space Mono',monospace; font-size:26px; margin:0 0 4px;}
+.hero .date-sub{color:var(--muted); font-size:13px; margin-bottom:14px;}
+.next-box{
+  background:#00000030; border:1px dashed var(--yellow)66; border-radius:14px;
+  padding:14px; display:flex; align-items:center; gap:12px;
+}
+.next-box .icon{font-size:22px;}
+.next-box .label{font-size:11px; color:var(--yellow); letter-spacing:.5px; text-transform:uppercase; margin-bottom:2px;}
+.next-box .title{font-weight:700; font-size:15px;}
+.next-box .meta{font-size:12px; color:var(--muted); margin-top:2px;}
+
+.class-item{display:flex; gap:12px; align-items:flex-start;}
+.chip{
+  font-family:'Space Mono',monospace; font-size:11px; padding:3px 8px; border-radius:8px;
+  display:inline-block; font-weight:700; letter-spacing:.3px;
+}
+.class-item .time-col{min-width:56px; font-family:'Space Mono',monospace; font-size:13px; color:var(--muted); padding-top:2px;}
+.class-item .info h3{margin:0 0 4px; font-size:15px;}
+.class-item .info .meta{font-size:12.5px; color:var(--muted); display:flex; gap:10px; flex-wrap:wrap;}
+
+/* TABS NAV */
+nav.tabs{
+  position:fixed; bottom:0; left:0; right:0; z-index:30;
+  background:#1A1C36ee; backdrop-filter:blur(10px);
+  border-top:1px solid var(--line);
+  display:flex; padding:8px 6px calc(8px + env(safe-area-inset-bottom));
+}
+nav.tabs button{
+  flex:1; background:none; border:none; color:var(--muted);
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  font-family:'Manrope'; font-size:10.5px; padding:6px 2px; border-radius:10px; cursor:pointer;
+}
+nav.tabs button .ic{font-size:19px;}
+nav.tabs button.active{color:var(--yellow);}
+
+/* SECTION HEADER */
+.sec-head{display:flex; align-items:center; justify-content:space-between; margin:18px 0 10px;}
+.sec-head h2{font-family:'Space Mono',monospace; font-size:15px; margin:0; display:flex; align-items:center; gap:8px;}
+.add-btn{
+  background:var(--yellow); color:#14162B; border:none; border-radius:10px;
+  width:34px; height:34px; font-size:18px; font-weight:700; cursor:pointer;
+}
+.add-btn:active{transform:scale(.9);}
+.empty{color:var(--muted); font-size:13.5px; text-align:center; padding:30px 10px;}
+
+/* announcement */
+.ann-title{font-weight:700; font-size:15.5px; margin:0 0 4px;}
+.ann-body{font-size:13.5px; color:#d8d6f0; line-height:1.5; margin:0 0 8px; white-space:pre-wrap;}
+.ann-foot{display:flex; justify-content:space-between; font-size:11.5px; color:var(--muted);}
+.del-btn{background:none; border:none; color:var(--red); font-size:12px; cursor:pointer; padding:2px 4px;}
+
+/* assignment */
+.assign-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+.badge{font-size:11px; padding:3px 9px; border-radius:20px; font-weight:700; white-space:nowrap;}
+.badge.overdue{background:#FF5C7222; color:var(--red);}
+.badge.soon{background:#FBBF2422; color:#FBBF24;}
+.badge.ok{background:#4ADE8022; color:var(--green);}
+.assign-desc{font-size:13.5px; color:#d8d6f0; margin:8px 0 6px; line-height:1.45;}
+.assign-due{font-size:12px; color:var(--muted); font-family:'Space Mono',monospace;}
+
+/* timetable day selector */
+.day-pills{display:flex; gap:6px; overflow-x:auto; padding:4px 0 12px;}
+.day-pills button{
+  flex:none; background:var(--bg-elev); border:1px solid var(--line); color:var(--muted);
+  padding:8px 14px; border-radius:20px; font-size:13px; font-family:'Manrope'; font-weight:600; cursor:pointer;
+}
+.day-pills button.active{background:var(--teal); color:#0e2523; border-color:var(--teal);}
+
+/* CGPA */
+.scale-toggle{display:flex; gap:8px; margin-bottom:14px;}
+.scale-toggle button{
+  flex:1; padding:9px; border-radius:12px; border:1px solid var(--line); background:var(--bg-elev);
+  color:var(--muted); font-family:'Space Mono',monospace; font-size:13px; cursor:pointer;
+}
+.scale-toggle button.active{background:var(--purple); color:#fff; border-color:var(--purple);}
+.course-row{display:grid; grid-template-columns:1fr 60px 70px 30px; gap:8px; align-items:center; margin-bottom:8px;}
+input, select, textarea{
+  background:var(--bg-elev-2); border:1px solid var(--line); color:var(--text);
+  padding:9px 10px; border-radius:10px; font-family:'Manrope'; font-size:13.5px; width:100%;
+}
+textarea{resize:vertical; min-height:60px;}
+input:focus, select:focus, textarea:focus{outline:2px solid var(--teal); outline-offset:1px;}
+.gpa-result{
+  background:linear-gradient(135deg, var(--purple)33, var(--teal)22);
+  border:1px solid var(--purple)55; border-radius:16px; padding:18px; text-align:center; margin-top:14px;
+}
+.gpa-result .num{font-family:'Space Mono',monospace; font-size:38px; font-weight:700;}
+.gpa-result .lbl{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px;}
+.rm-row{background:none; border:none; color:var(--red); font-size:16px; cursor:pointer;}
+.more-item{display:flex; align-items:center; gap:14px; cursor:pointer; transition:.15s;}
+.more-item:active{transform:scale(.98); background:var(--bg-elev-2);}
+.more-icon{font-size:26px;}
+.more-arrow{margin-left:auto; color:var(--muted);}
+.back-link{background:none; border:none; color:var(--teal); font-size:13px; cursor:pointer; padding:0; margin-bottom:10px; display:flex; align-items:center; gap:4px;}
+.search-box{margin:6px 0 14px;}
+.poll-q{font-weight:700; font-size:15.5px; margin:0 0 12px;}
+.poll-opt{margin-bottom:8px;}
+.poll-opt button{
+  width:100%; text-align:left; background:var(--bg-elev-2); border:1px solid var(--line); color:var(--text);
+  padding:10px 12px; border-radius:10px; cursor:pointer; font-family:'Manrope'; font-size:13.5px;
+  display:flex; justify-content:space-between; align-items:center; gap:8px;
+}
+.poll-bar-wrap{position:relative;}
+.poll-bar{position:absolute; left:0; top:0; bottom:0; background:var(--teal)33; border-radius:10px; z-index:0;}
+.poll-opt button span.txt{position:relative; z-index:1;}
+.poll-opt button span.pct{position:relative; z-index:1; font-family:'Space Mono',monospace; color:var(--muted); font-size:12px;}
+.poll-meta{font-size:11.5px; color:var(--muted); margin-top:6px;}
+.faq-title{font-weight:700; font-size:15px; margin:0 0 6px; cursor:pointer; display:flex; justify-content:space-between; align-items:center;}
+.faq-content{font-size:13.5px; color:#d8d6f0; line-height:1.5; margin:0 0 8px;}
+
+/* IMAGE THUMBS + LIGHTBOX */
+.img-thumb{
+  width:100%; max-height:220px; object-fit:cover; border-radius:12px;
+  margin:10px 0; cursor:zoom-in; display:block; border:1px solid var(--line);
+  transition:opacity .15s;
+}
+.img-thumb:active{ opacity:.8; }
+.file-input-wrap{
+  display:flex; align-items:center; gap:10px; margin-top:4px;
+}
+.file-input-wrap input[type=file]{ font-size:12px; color:var(--muted); }
+.img-preview-small{ width:56px; height:56px; object-fit:cover; border-radius:8px; border:1px solid var(--line); }
+.remove-img-row{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted); margin-top:6px; }
+.lightbox-overlay{
+  position:fixed; inset:0; background:#000000f0; z-index:400;
+  display:flex; align-items:center; justify-content:center; overflow:hidden; touch-action:none;
+}
+.lightbox-img{
+  max-width:94vw; max-height:88vh; touch-action:none; user-select:none;
+  -webkit-user-drag:none; will-change:transform; cursor:zoom-in; border-radius:4px;
+}
+.lightbox-close{
+  position:absolute; top:18px; right:18px; background:var(--bg-elev); border:1px solid var(--line);
+  color:var(--text); width:42px; height:42px; border-radius:50%; font-size:20px; z-index:410;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.lightbox-hint{
+  position:absolute; bottom:22px; left:50%; transform:translateX(-50%);
+  font-size:11.5px; color:var(--muted); background:#00000088; padding:6px 14px; border-radius:20px;
+}
+.cumu-box{margin-top:18px; padding-top:16px; border-top:1px dashed var(--line);}
+.two-col{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+label.f-label{font-size:11.5px; color:var(--muted); display:block; margin:0 0 5px;}
+.field{margin-bottom:12px;}
+button.primary{
+  background:var(--yellow); color:#14162B; border:none; padding:11px; border-radius:12px;
+  font-weight:700; font-size:14px; cursor:pointer; width:100%; font-family:'Manrope';
+}
+button.ghost{
+  background:none; border:1px solid var(--line); color:var(--muted); padding:11px; border-radius:12px;
+  width:100%; font-size:13.5px; cursor:pointer;
+}
+
+/* MODAL */
+.overlay{
+  position:fixed; inset:0; background:#0a0b1a99; backdrop-filter:blur(3px);
+  display:flex; align-items:flex-end; justify-content:center; z-index:100;
+}
+.modal{
+  background:var(--bg-elev); border:1px solid var(--line); border-radius:20px 20px 0 0;
+  width:100%; max-width:640px; padding:20px 18px calc(20px + env(safe-area-inset-bottom));
+  max-height:88vh; overflow-y:auto;
+}
+.modal-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;}
+.modal-head h3{margin:0; font-family:'Space Mono',monospace; font-size:16px;}
+.close-x{background:none; border:none; color:var(--muted); font-size:22px; cursor:pointer; line-height:1;}
+.toast{
+  position:fixed; top:14px; left:50%; transform:translateX(-50%);
+  background:var(--green); color:#0e2513; padding:10px 18px; border-radius:12px; font-size:13.5px;
+  font-weight:700; z-index:200; opacity:0; transition:opacity .25s;
+}
+.toast.show{opacity:1;}
+
+/* LOADING */
+.loading{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:80px 20px; color:var(--muted); font-size:13.5px; gap:14px;
+}
+.spinner{
+  width:34px; height:34px; border-radius:50%;
+  border:3px solid var(--line); border-top-color:var(--yellow);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* CARD ENTRANCE */
+.card{ animation: fadeUp .25s ease both; }
+@keyframes fadeUp{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+/* FOCUS VISIBILITY */
+button:focus-visible, a:focus-visible{ outline:2px solid var(--teal); outline-offset:2px; }
+
+@media (prefers-reduced-motion: reduce){
+  .card{ animation:none; }
+  .spinner{ animation-duration: 1.6s; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <span class="prompt mono">$ class --active</span>
+    <h1>Vortex.io</h1>
+    <span class="sub">100 Level · 2nd Semester Portal</span>
+  </div>
+  <div class="header-btns">
+    <button class="admin-btn" id="themeBtn" title="Toggle ash / black theme">⚫</button>
+    <button class="admin-btn" id="notifBtn" title="Deadline reminders">🔔</button>
+    <button class="admin-btn" id="adminBtn" title="Admin">🔒</button>
+  </div>
+</header>
+
+<main id="main"><div class="loading"><div class="spinner"></div><p>Loading class data…</p></div></main>
+
+<nav class="tabs">
+  <button data-tab="today" class="active"><span class="ic">🏠</span>Today</button>
+  <button data-tab="board"><span class="ic">📣</span>Board</button>
+  <button data-tab="assignments"><span class="ic">📝</span>Tasks</button>
+  <button data-tab="timetable"><span class="ic">🗓️</span>Table</button>
+  <button data-tab="more"><span class="ic">⋯</span>More</button>
+</nav>
+
+<div id="modalRoot"></div>
+<div id="lightboxRoot"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ STATE ============ */
+let isAdmin = false;
+let activeTab = 'today';
+let activeDay = currentDayName();
+let cgpaScale = 5;
+
+const DEFAULT_PASSCODE = 'csc100reps';
+let data = {
+  announcements: [],
+  assignments: [],
+  timetable: {},   // { Monday: [ {id,code,name,start,end,venue,lecturer} ] }
+  materials: [],
+  faq: [],
+  polls: [],
+  pollVotes: [],
+  directory: [],
+  suggestions: [],
+  syllabus: [],
+  exams: [],
+  passcode: DEFAULT_PASSCODE,
+  semesterStart: null,
+  semesterEnd: null
+};
+let completedAssignments = {};
+let hideCompleted = false;
+let cgpaCourses = []; // personal
+let cgpaPrev = { prevCgpa:'', prevUnits:'' };
+let notifPermission = ('Notification' in window) ? Notification.permission : 'unsupported';
+let isLoading = true;
+
+// tracks which item is being edited (null = creating new)
+let editing = { announcement:null, assignment:null, slot:null, material:null, faq:null };
+let searchBoard = '';
+let searchAssignments = '';
+let voterId = null;
+try{
+  voterId = localStorage.getItem('voter-id');
+  if(!voterId){ voterId = 'v_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36); localStorage.setItem('voter-id', voterId); }
+}catch(e){ voterId = 'v_' + Math.random().toString(36).slice(2,10); }
+
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const COLORS = ['#A855F7','#22D3C0','#F472B6','#FBBF24','#818CF8','#4ADE80'];
+
+function currentDayName(){
+  const idx = new Date().getDay(); // 0 Sun .. 6 Sat
+  const map = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  return map[idx];
+}
+function colorForCode(code){
+  if(!code) return COLORS[0];
+  let h=0; for(const c of code) h = (h*31 + c.charCodeAt(0)) % 997;
+  return COLORS[h % COLORS.length];
+}
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+/* ============ SUPABASE ============ */
+const SB_URL = 'https://vfbdcosmwaidlqnrgkce.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmYmRjb3Ntd2FpZGxxbnJna2NlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwMjI2MTQsImV4cCI6MjA5ODU5ODYxNH0.QrGg9ReEp-eXrWN9FGUFF43k3_lW3fMKIONisDugbK4';
+const SB_HEADERS = {
+  'apikey': SB_KEY,
+  'Authorization': `Bearer ${SB_KEY}`,
+  'Content-Type': 'application/json'
+};
+async function sbSelect(table, order){
+  const url = `${SB_URL}/rest/v1/${table}?select=*${order?`&order=${order}`:''}`;
+  const res = await fetch(url, { headers: SB_HEADERS });
+  if(!res.ok) throw new Error('select failed: '+table);
+  return await res.json();
+}
+async function sbInsert(table, row){
+  const res = await fetch(`${SB_URL}/rest/v1/${table}`, {
+    method:'POST',
+    headers:{...SB_HEADERS, 'Prefer':'return=representation'},
+    body: JSON.stringify(row)
+  });
+  if(!res.ok) throw new Error('insert failed: '+table);
+  return await res.json();
+}
+async function sbUpdate(table, id, patch){
+  const res = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+    method:'PATCH',
+    headers:{...SB_HEADERS, 'Prefer':'return=representation'},
+    body: JSON.stringify(patch)
+  });
+  if(!res.ok) throw new Error('update failed: '+table);
+  return await res.json();
+}
+async function sbUpsertSetting(key, value){
+  const res = await fetch(`${SB_URL}/rest/v1/settings`, {
+    method:'POST',
+    headers:{...SB_HEADERS, 'Prefer':'resolution=merge-duplicates,return=representation'},
+    body: JSON.stringify({ key, value })
+  });
+  if(!res.ok) throw new Error('setting upsert failed');
+  return await res.json();
+}
+async function sbDelete(table, id){
+  const res = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+    method:'DELETE',
+    headers: SB_HEADERS
+  });
+  if(!res.ok) throw new Error('delete failed: '+table);
+}
+async function uploadImage(file){
+  if(!file) return null;
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
+  const path = `${Date.now()}-${uid()}.${ext}`;
+  const res = await fetch(`${SB_URL}/storage/v1/object/portal-images/${path}`, {
+    method:'POST',
+    headers:{
+      'apikey': SB_KEY,
+      'Authorization': `Bearer ${SB_KEY}`,
+      'Content-Type': file.type || 'application/octet-stream'
+    },
+    body: file
+  });
+  if(!res.ok) throw new Error('image upload failed');
+  return `${SB_URL}/storage/v1/object/public/portal-images/${path}`;
+}
+function imageFieldHtml(prefix, existingUrl){
+  return `
+    <div class="field">
+      <label class="f-label">PHOTO (optional)</label>
+      ${existingUrl ? `
+        <div class="file-input-wrap" style="margin-bottom:8px;">
+          <img src="${escAttr(existingUrl)}" class="img-preview-small" />
+          <label class="remove-img-row"><input type="checkbox" id="${prefix}RemoveImg" /> Remove current photo</label>
+        </div>` : ''}
+      <div class="file-input-wrap"><input type="file" accept="image/*" id="${prefix}ImageFile" /></div>
+    </div>`;
+}
+async function resolveImageUpload(prefix, existingUrl){
+  let imageUrl = existingUrl || null;
+  const removeEl = document.getElementById(prefix+'RemoveImg');
+  if(removeEl && removeEl.checked) imageUrl = null;
+  const fileEl = document.getElementById(prefix+'ImageFile');
+  const file = fileEl && fileEl.files && fileEl.files[0];
+  if(file){ imageUrl = await uploadImage(file); }
+  return imageUrl;
+}
+
+/* ============ LOAD ============ */
+async function loadAll(){
+  try{
+    const rows = await sbSelect('announcements','ts.desc');
+    data.announcements = rows.map(r=>({ id:r.id, title:r.title, body:r.body, author:r.author, ts:Number(r.ts), image:r.image_url||null }));
+  }catch(e){ data.announcements = []; showToast('Could not reach server — check connection'); }
+
+  try{
+    const rows = await sbSelect('assignments','due.asc');
+    data.assignments = rows.map(r=>({ id:r.id, code:r.code, title:r.title, desc:r.description||'', due:r.due, image:r.image_url||null }));
+  }catch(e){ data.assignments = []; }
+
+  try{
+    const rows = await sbSelect('timetable_slots');
+    data.timetable = {};
+    rows.forEach(r=>{
+      if(!data.timetable[r.day]) data.timetable[r.day] = [];
+      data.timetable[r.day].push({ id:r.id, code:r.code, name:r.name, start:r.start_time, end:r.end_time, venue:r.venue, lecturer:r.lecturer, image:r.image_url||null });
+    });
+  }catch(e){ data.timetable = {}; }
+
+  try{
+    const rows = await sbSelect('materials','ts.desc');
+    data.materials = rows.map(r=>({ id:r.id, code:r.code, title:r.title, desc:r.description||'', link:r.link, ts:Number(r.ts), image:r.image_url||null }));
+  }catch(e){ data.materials = []; }
+
+  try{
+    const rows = await sbSelect('faq_items','ts.desc');
+    data.faq = rows.map(r=>({ id:r.id, title:r.title, content:r.content, link:r.link, ts:Number(r.ts) }));
+  }catch(e){ data.faq = []; }
+
+  try{
+    const rows = await sbSelect('polls','ts.desc');
+    data.polls = rows.map(r=>({ id:r.id, question:r.question, options:r.options, ts:Number(r.ts), active:r.active }));
+  }catch(e){ data.polls = []; }
+
+  try{
+    data.pollVotes = await sbSelect('poll_votes');
+  }catch(e){ data.pollVotes = []; }
+
+  try{
+    const rows = await sbSelect('settings');
+    const map = {};
+    rows.forEach(r=> map[r.key] = r.value);
+    data.passcode = map.admin_passcode || DEFAULT_PASSCODE;
+    data.semesterStart = map.semester_start || null;
+    data.semesterEnd = map.semester_end || null;
+  }catch(e){ data.passcode = DEFAULT_PASSCODE; }
+
+  try{
+    const rows = await sbSelect('directory','ts.desc');
+    data.directory = rows.map(r=>({ id:r.id, name:r.name, contact:r.contact||'', skills:r.skills||'', ts:Number(r.ts) }));
+  }catch(e){ data.directory = []; }
+
+  try{
+    const rows = await sbSelect('suggestions','ts.desc');
+    data.suggestions = rows.map(r=>({ id:r.id, content:r.content, ts:Number(r.ts) }));
+  }catch(e){ data.suggestions = []; }
+
+  try{
+    const rows = await sbSelect('syllabus_items','order_num.asc');
+    data.syllabus = rows.map(r=>({ id:r.id, code:r.code, topic:r.topic, order:r.order_num, covered:!!r.covered }));
+  }catch(e){ data.syllabus = []; }
+
+  try{
+    const rows = await sbSelect('exams','exam_date.asc');
+    data.exams = rows.map(r=>({ id:r.id, code:r.code, title:r.title, date:r.exam_date, venue:r.venue||'' }));
+  }catch(e){ data.exams = []; }
+
+  try{ completedAssignments = JSON.parse(localStorage.getItem('completed-assignments') || '{}'); }catch(e){ completedAssignments = {}; }
+
+  // CGPA is personal, so it stays on this device only (this is a real website, so localStorage is fine here)
+  try{ cgpaCourses = JSON.parse(localStorage.getItem('cgpa-courses') || '[]'); }catch(e){ cgpaCourses = []; }
+  try{ cgpaPrev = JSON.parse(localStorage.getItem('cgpa-prev') || 'null') || { prevCgpa:'', prevUnits:'' }; }catch(e){ cgpaPrev = { prevCgpa:'', prevUnits:'' }; }
+
+  isLoading = false;
+  render();
+  checkDeadlineReminders();
+}
+function saveCgpaCourses(){ try{ localStorage.setItem('cgpa-courses', JSON.stringify(cgpaCourses)); }catch(e){} }
+function saveCgpaPrev(){ try{ localStorage.setItem('cgpa-prev', JSON.stringify(cgpaPrev)); }catch(e){} }
+
+/* ============ LIGHTBOX (zoomable image viewer) ============ */
+window.openLightbox = function(url){
+  if(!url) return;
+  const root = document.getElementById('lightboxRoot');
+  root.innerHTML = `
+    <div class="lightbox-overlay" id="lbOverlay">
+      <button class="lightbox-close" onclick="closeLightbox()">×</button>
+      <img src="${escAttr(url)}" class="lightbox-img" id="lbImg" draggable="false" />
+      <div class="lightbox-hint" id="lbHint">Pinch or double-tap to zoom</div>
+    </div>`;
+  const img = document.getElementById('lbImg');
+  const overlay = document.getElementById('lbOverlay');
+  const hint = document.getElementById('lbHint');
+  let scale=1, panX=0, panY=0, lastDist=null, lastTapTime=0, isPanning=false, startX=0, startY=0;
+
+  function applyTransform(){
+    img.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    img.style.cursor = scale>1 ? 'grab' : 'zoom-in';
+    if(hint) hint.style.display = scale>1 ? 'none' : 'block';
+  }
+  function resetZoom(){ scale=1; panX=0; panY=0; applyTransform(); }
+  function getDist(t){ const dx=t[0].clientX-t[1].clientX, dy=t[0].clientY-t[1].clientY; return Math.sqrt(dx*dx+dy*dy); }
+
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeLightbox(); });
+
+  img.addEventListener('touchstart', (e)=>{
+    if(e.touches.length===2){ lastDist = getDist(e.touches); }
+    else if(e.touches.length===1){
+      const now = Date.now();
+      if(now - lastTapTime < 300){ scale>1 ? resetZoom() : (scale=2.4, applyTransform()); }
+      lastTapTime = now;
+      isPanning = scale>1;
+      startX = e.touches[0].clientX - panX;
+      startY = e.touches[0].clientY - panY;
+    }
+  }, {passive:true});
+
+  img.addEventListener('touchmove', (e)=>{
+    if(e.touches.length===2 && lastDist){
+      const dist = getDist(e.touches);
+      scale = Math.min(4, Math.max(1, scale*(dist/lastDist)));
+      lastDist = dist;
+      applyTransform();
+    } else if(e.touches.length===1 && isPanning){
+      panX = e.touches[0].clientX - startX;
+      panY = e.touches[0].clientY - startY;
+      applyTransform();
+    }
+  }, {passive:true});
+
+  img.addEventListener('touchend', (e)=>{
+    if(e.touches.length<2) lastDist=null;
+    if(e.touches.length===0){ isPanning=false; if(scale<=1){ panX=0; panY=0; applyTransform(); } }
+  });
+
+  img.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    if(scale===1){ scale=2.4; applyTransform(); } else { resetZoom(); }
+  });
+  img.addEventListener('mousedown', (e)=>{
+    if(scale<=1) return;
+    isPanning=true; startX=e.clientX-panX; startY=e.clientY-panY;
+  });
+  const onMouseMove = (e)=>{ if(!isPanning) return; panX=e.clientX-startX; panY=e.clientY-startY; applyTransform(); };
+  const onMouseUp = ()=>{ isPanning=false; };
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup', onMouseUp);
+  overlay._cleanup = ()=>{ window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
+}
+window.closeLightbox = function(){
+  const overlay = document.getElementById('lbOverlay');
+  if(overlay && overlay._cleanup) overlay._cleanup();
+  document.getElementById('lightboxRoot').innerHTML = '';
+}
+
+/* ============ REMINDERS ============ */
+window.toggleNotifications = async function(){
+  if(!('Notification' in window)){ showToast('Reminders not supported on this browser'); return; }
+  if(Notification.permission === 'granted'){
+    showToast('Reminders already on ✓');
+    checkDeadlineReminders(true);
+    return;
+  }
+  if(Notification.permission === 'denied'){
+    showToast('Blocked — enable notifications for this site in your browser settings');
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  notifPermission = perm;
+  if(perm === 'granted'){ showToast('Deadline reminders on ✓'); checkDeadlineReminders(true); }
+  else{ showToast('Reminders not enabled'); }
+  render();
+}
+function daysLeftForDate(dueStr){
+  const due = new Date(dueStr+'T23:59:59');
+  return Math.ceil((due - new Date())/(1000*60*60*24));
+}
+function checkDeadlineReminders(force){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  const todayKey = new Date().toISOString().slice(0,10);
+  let notified = {};
+  try{ notified = JSON.parse(localStorage.getItem('notified-assignments') || '{}'); }catch(e){}
+  data.assignments.forEach(a=>{
+    const dl = daysLeftForDate(a.due);
+    if(dl>=0 && dl<=1){
+      const key = a.id+':'+todayKey;
+      if(force || !notified[key]){
+        try{
+          new Notification('📝 Assignment due soon', { body: `${a.code} — ${a.title} (${dl===0?'due today':'due tomorrow'})` });
+        }catch(e){}
+        notified[key] = true;
+      }
+    }
+  });
+  try{ localStorage.setItem('notified-assignments', JSON.stringify(notified)); }catch(e){}
+}
+setInterval(()=>checkDeadlineReminders(), 30*60*1000);
+
+/* ============ MODAL HELPERS ============ */
+function openModal(html){
+  document.getElementById('modalRoot').innerHTML = `<div class="overlay" id="ovl"><div class="modal">${html}</div></div>`;
+  document.getElementById('ovl').addEventListener('click', (e)=>{ if(e.target.id==='ovl') closeModal(); });
+}
+function closeModal(){ document.getElementById('modalRoot').innerHTML = ''; }
+
+function promptAdmin(){
+  openModal(`
+    <div class="modal-head"><h3>🔒 Admin Login</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <div class="field">
+      <label class="f-label">PASSCODE</label>
+      <input type="password" id="pcInput" placeholder="Enter admin passcode" autofocus />
+    </div>
+    <button class="primary" onclick="tryAdminLogin()">Unlock</button>
+  `);
+}
+window.tryAdminLogin = function(){
+  const val = document.getElementById('pcInput').value;
+  if(val === data.passcode){
+    isAdmin = true; closeModal(); showToast('Admin unlocked ✓'); render();
+  } else {
+    showToast('Wrong passcode');
+  }
+}
+window.logoutAdmin = function(){ isAdmin = false; render(); }
+
+/* ============ RENDER: ROOT ============ */
+function render(){
+  const NAV_MAP = { today:'today', board:'board', assignments:'assignments', timetable:'timetable', more:['more','materials','cgpa','faq','polls','directory','suggestions','syllabus','exams'] };
+  document.querySelectorAll('nav.tabs button').forEach(b=>{
+    const target = NAV_MAP[b.dataset.tab];
+    const isActive = Array.isArray(target) ? target.includes(activeTab) : target === activeTab;
+    b.classList.toggle('active', isActive);
+  });
+  document.getElementById('adminBtn').textContent = isAdmin ? '🔓' : '🔒';
+  document.getElementById('adminBtn').classList.toggle('on', isAdmin);
+  const notifOn = ('Notification' in window) && Notification.permission === 'granted';
+  document.getElementById('notifBtn').classList.toggle('notif-on', notifOn);
+  const isLight = document.documentElement.classList.contains('light-theme');
+  document.getElementById('themeBtn').textContent = isLight ? '🌫️' : '⚫';
+
+  const main = document.getElementById('main');
+  if(isLoading){ main.innerHTML = `<div class="loading"><div class="spinner"></div><p>Loading class data…</p></div>`; return; }
+  if(activeTab==='today') main.innerHTML = renderToday();
+  else if(activeTab==='board') main.innerHTML = renderBoard();
+  else if(activeTab==='assignments') main.innerHTML = renderAssignments();
+  else if(activeTab==='timetable') main.innerHTML = renderTimetable();
+  else if(activeTab==='materials') main.innerHTML = renderMaterials();
+  else if(activeTab==='faq') main.innerHTML = renderFaq();
+  else if(activeTab==='polls') main.innerHTML = renderPolls();
+  else if(activeTab==='directory') main.innerHTML = renderDirectory();
+  else if(activeTab==='suggestions') main.innerHTML = renderSuggestions();
+  else if(activeTab==='syllabus') main.innerHTML = renderSyllabus();
+  else if(activeTab==='exams') main.innerHTML = renderExams();
+  else if(activeTab==='cgpa') main.innerHTML = renderCgpa();
+  else if(activeTab==='more') main.innerHTML = renderMore();
+}
+window.goTab = function(t){ activeTab = t; render(); }
+function renderInPlace(tab){
+  const main = document.getElementById('main');
+  const active = document.activeElement;
+  const hadFocus = active && main.contains(active) && active.id;
+  const selStart = hadFocus && active.selectionStart != null ? active.selectionStart : null;
+  const selEnd = hadFocus && active.selectionEnd != null ? active.selectionEnd : null;
+  const focusId = hadFocus ? active.id : null;
+
+  if(tab==='board') main.innerHTML = renderBoard();
+  else if(tab==='assignments') main.innerHTML = renderAssignments();
+  else render();
+
+  if(focusId){
+    const el = document.getElementById(focusId);
+    if(el){ el.focus(); if(selStart!=null) { try{ el.setSelectionRange(selStart, selEnd); }catch(e){} } }
+  }
+}
+window.toggleTheme = function(){
+  const isLight = document.documentElement.classList.toggle('light-theme');
+  try{ localStorage.setItem('theme', isLight ? 'light' : 'dark'); }catch(e){}
+  render();
+}
+function renderMore(){
+  const items = [
+    { tab:'materials', icon:'📁', label:'Course Materials', desc:'Notes, slides, past questions' },
+    { tab:'cgpa', icon:'🧮', label:'CGPA Calculator', desc:'Work out your GPA' },
+    { tab:'polls', icon:'🗳️', label:'Polls', desc:'Vote on class decisions' },
+    { tab:'faq', icon:'❓', label:'FAQs & Links', desc:'Common questions, useful links' },
+    { tab:'directory', icon:'👥', label:'Student Directory', desc:'Find classmates for group work' },
+    { tab:'suggestions', icon:'💬', label:'Suggestion Box', desc:'Anonymous feedback to reps' },
+    { tab:'syllabus', icon:'📖', label:'Syllabus Tracker', desc:"What's been covered so far" },
+    { tab:'exams', icon:'🎯', label:'Exam Countdown', desc:'Upcoming tests & exams per course' },
+  ];
+  return `
+    <div class="sec-head"><h2>⋯ More</h2></div>
+    ${items.map(i=>`
+      <div class="card more-item" onclick="goTab('${i.tab}')" role="button" tabindex="0">
+        <span class="more-icon">${i.icon}</span>
+        <div>
+          <h3 style="margin:0 0 2px; font-size:15px;">${i.label}</h3>
+          <p style="margin:0; font-size:12.5px; color:var(--muted)">${i.desc}</p>
+        </div>
+        <span class="more-arrow">→</span>
+      </div>`).join('')}
+  `;
+}
+
+/* ============ TODAY ============ */
+function renderToday(){
+  const today = currentDayName();
+  const slots = (data.timetable[today]||[]).slice().sort((a,b)=>a.start.localeCompare(b.start));
+  const now = new Date();
+  const nowMins = now.getHours()*60+now.getMinutes();
+  const toMins = t=>{ const [h,m]=t.split(':').map(Number); return h*60+m; };
+  const next = slots.find(s=>toMins(s.start) > nowMins);
+  const dateStr = now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+
+  let heroInner;
+  if(!DAYS.includes(today)){
+    heroInner = `<div class="next-box"><span class="icon">🌴</span><div><div class="label">Weekend</div><div class="title">No classes today</div></div></div>`;
+  } else if(next){
+    heroInner = `
+      <div class="next-box">
+        <span class="icon">⏰</span>
+        <div>
+          <div class="label">Next up</div>
+          <div class="title">${esc(next.name)} <span class="chip" style="background:${colorForCode(next.code)}22;color:${colorForCode(next.code)}">${esc(next.code)}</span></div>
+          <div class="meta">${next.start}–${next.end} · ${esc(next.venue||'TBA')}</div>
+        </div>
+      </div>`;
+  } else if(slots.length){
+    heroInner = `<div class="next-box"><span class="icon">✅</span><div><div class="label">All done</div><div class="title">No more classes today</div></div></div>`;
+  } else {
+    heroInner = `<div class="next-box"><span class="icon">🆓</span><div><div class="label">Free day</div><div class="title">Nothing on the timetable</div></div></div>`;
+  }
+
+  const list = slots.length ? slots.map(s=>`
+    <div class="card">
+      <div class="accent-bar" style="background:${colorForCode(s.code)}"></div>
+      <div class="class-item">
+        <div class="time-col mono">${s.start}<br/><span style="opacity:.5">${s.end}</span></div>
+        <div class="info">
+          <h3>${esc(s.name)} <span class="chip" style="background:${colorForCode(s.code)}22;color:${colorForCode(s.code)}">${esc(s.code)}</span></h3>
+          <div class="meta"><span>📍 ${esc(s.venue||'TBA')}</span>${s.lecturer?`<span>👤 ${esc(s.lecturer)}</span>`:''}</div>
+          ${s.image?`<img src="${escAttr(s.image)}" class="img-thumb" onclick="openLightbox('${escAttr(s.image)}')" />`:''}
+        </div>
+      </div>
+    </div>`).join('') : `<div class="empty">No classes scheduled for today.</div>`;
+
+  return `
+    <div class="hero">
+      <div class="cmd mono">$ today --day=${today}</div>
+      <div class="day">${today}</div>
+      <div class="date-sub">${dateStr}</div>
+      ${heroInner}
+    </div>
+    ${renderSemesterProgress()}
+    <div class="sec-head"><h2>📚 Today's classes</h2></div>
+    ${list}
+  `;
+}
+function renderSemesterProgress(){
+  if(!data.semesterStart || !data.semesterEnd){
+    return isAdmin ? `
+      <div class="card">
+        <span style="font-size:12.5px; color:var(--muted); font-weight:700;">SEMESTER PROGRESS</span>
+        <p style="font-size:13px; color:var(--muted); margin:8px 0;">Set your semester start/end dates to show a progress bar here.</p>
+        <button class="ghost" onclick="openSemesterForm()">Set semester dates</button>
+      </div>` : '';
+  }
+  const start = new Date(data.semesterStart+'T00:00:00');
+  const end = new Date(data.semesterEnd+'T23:59:59');
+  const now = new Date();
+  const totalDays = Math.max(1, Math.round((end-start)/(1000*60*60*24)));
+  const elapsed = Math.round((now-start)/(1000*60*60*24));
+  const pct = Math.min(100, Math.max(0, Math.round((elapsed/totalDays)*100)));
+  const daysLeft = Math.max(0, Math.round((end-now)/(1000*60*60*24)));
+  const totalWeeks = Math.ceil(totalDays/7);
+  const weekNow = Math.min(totalWeeks, Math.max(1, Math.ceil(elapsed/7)));
+  let label;
+  if(now < start) label = `Semester starts ${start.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`;
+  else if(now > end) label = `Semester ended`;
+  else label = `Week ${weekNow} of ${totalWeeks} · ${daysLeft} day${daysLeft===1?'':'s'} left`;
+  return `
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-size:12.5px; color:var(--muted); font-weight:700;">SEMESTER PROGRESS</span>
+        <span style="font-size:12px; color:var(--muted)" class="mono">${pct}%</span>
+      </div>
+      <div style="background:var(--bg-elev-2); border-radius:8px; height:10px; overflow:hidden;">
+        <div style="width:${pct}%; height:100%; background:linear-gradient(90deg, var(--teal), var(--yellow)); border-radius:8px;"></div>
+      </div>
+      <div style="font-size:12.5px; color:var(--muted); margin-top:8px; display:flex; justify-content:space-between; align-items:center;">
+        <span>${label}</span>
+        ${isAdmin?`<button class="del-btn" style="color:var(--teal)" onclick="openSemesterForm()">Edit</button>`:''}
+      </div>
+    </div>
+  `;
+}
+window.openSemesterForm = function(){
+  openModal(`
+    <div class="modal-head"><h3>Semester Dates</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <div class="field"><label class="f-label">SEMESTER START</label><input type="date" id="semStart" value="${data.semesterStart||''}" /></div>
+    <div class="field"><label class="f-label">SEMESTER END</label><input type="date" id="semEnd" value="${data.semesterEnd||''}" /></div>
+    <button class="primary" onclick="submitSemesterDates()">Save dates</button>
+  `);
+}
+window.submitSemesterDates = async function(){
+  const start = document.getElementById('semStart').value;
+  const end = document.getElementById('semEnd').value;
+  if(!start || !end){ showToast('Set both dates'); return; }
+  try{
+    await sbUpsertSetting('semester_start', start);
+    await sbUpsertSetting('semester_end', end);
+    data.semesterStart = start; data.semesterEnd = end;
+    closeModal(); showToast('Saved ✓'); render();
+  }catch(e){ showToast('Failed to save — check connection'); }
+}
+
+/* ============ BOARD (announcements) ============ */
+function renderBoard(){
+  const q = searchBoard.trim().toLowerCase();
+  let items = data.announcements.slice().sort((a,b)=> b.ts - a.ts);
+  if(q) items = items.filter(a => (a.title+' '+a.body+' '+(a.author||'')).toLowerCase().includes(q));
+  const list = items.length ? items.map(a=>`
+    <div class="card">
+      <div class="accent-bar" style="background:${colorForCode(a.author)}"></div>
+      <p class="ann-title">${esc(a.title)}</p>
+      <p class="ann-body">${esc(a.body)}</p>
+      ${a.image?`<img src="${escAttr(a.image)}" class="img-thumb" onclick="openLightbox('${escAttr(a.image)}')" />`:''}
+      <div class="ann-foot">
+        <span>${esc(a.author||'Course Rep')} · ${new Date(a.ts).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span>
+        ${isAdmin?`<span><button class="del-btn" style="color:var(--teal)" onclick="openAnnouncementForm('${a.id}')">Edit</button> <button class="del-btn" onclick="deleteAnnouncement('${a.id}')">Delete</button></span>`:''}
+      </div>
+    </div>`).join('') : `<div class="empty">${q?'No announcements match your search.':'No announcements yet. Check back soon!'}</div>`;
+
+  return `
+    <div class="sec-head">
+      <h2>📣 Announcements</h2>
+      ${isAdmin?`<button class="add-btn" onclick="openAnnouncementForm()">+</button>`:''}
+    </div>
+    <div class="search-box"><input id="boardSearchInput" placeholder="🔍 Search announcements..." value="${escAttr(searchBoard)}" oninput="setSearchBoard(this.value)" /></div>
+    ${list}
+  `;
+}
+window.setSearchBoard = function(v){ searchBoard = v; renderInPlace('board'); }
+window.openAnnouncementForm = function(id){
+  editing.announcement = id || null;
+  const existing = id ? data.announcements.find(a=>a.id===id) : null;
+  openModal(`
+    <div class="modal-head"><h3>${existing?'Edit':'New'} Announcement</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <div class="field"><label class="f-label">TITLE</label><input id="annTitle" placeholder="e.g. CSC102 test moved to Friday" value="${existing?escAttr(existing.title):''}" /></div>
+    <div class="field"><label class="f-label">DETAILS</label><textarea id="annBody" placeholder="Write the full announcement...">${existing?esc(existing.body):''}</textarea></div>
+    <div class="field"><label class="f-label">POSTED BY</label><input id="annAuthor" placeholder="e.g. Tolu (Course Rep)" value="${existing?escAttr(existing.author):''}" /></div>
+    ${imageFieldHtml('ann', existing?existing.image:null)}
+    <button class="primary" onclick="submitAnnouncement()">${existing?'Save changes':'Post to board'}</button>
+  `);
+}
+window.submitAnnouncement = async function(){
+  const title = document.getElementById('annTitle').value.trim();
+  const body = document.getElementById('annBody').value.trim();
+  const author = document.getElementById('annAuthor').value.trim() || 'Course Rep';
+  if(!title || !body){ showToast('Add a title and details'); return; }
+  try{
+    if(editing.announcement){
+      const existing = data.announcements.find(a=>a.id===editing.announcement);
+      let image;
+      try{ image = await resolveImageUpload('ann', existing?existing.image:null); }
+      catch(e){ showToast('Image upload failed — saved without new photo'); image = existing?existing.image:null; }
+      await sbUpdate('announcements', editing.announcement, { title, body, author, image_url: image });
+      if(existing){ existing.title=title; existing.body=body; existing.author=author; existing.image=image; }
+      editing.announcement = null;
+      closeModal(); showToast('Updated ✓'); render();
+    } else {
+      let image = null;
+      try{ image = await resolveImageUpload('ann', null); }
+      catch(e){ showToast('Image upload failed — posting without photo'); }
+      const row = { id:uid(), title, body, author, ts: Date.now(), image };
+      await sbInsert('announcements', { id:row.id, title, body, author, ts:row.ts, image_url:image });
+      data.announcements.push(row);
+      closeModal(); showToast('Posted ✓'); render();
+    }
+  }catch(e){ showToast('Failed to save — check connection'); }
+}
+window.deleteAnnouncement = async function(id){
+  try{
+    await sbDelete('announcements', id);
+    data.announcements = data.announcements.filter(a=>a.id!==id);
+    render();
+  }catch(e){ showToast('Failed to delete — try again'); }
+}
+
+/* ============ ASSIGNMENTS ============ */
+function daysLeft(dueStr){
+  const due = new Date(dueStr+'T23:59:59');
+  const diff = Math.ceil((due - new Date())/(1000*60*60*24));
+  return diff;
+}
+function renderAssignments(){
+  const q = searchAssignments.trim().toLowerCase();
+  let items = data.assignments.slice().sort((a,b)=> a.due.localeCompare(b.due));
+  if(q) items = items.filter(a => (a.code+' '+a.title+' '+(a.desc||'')).toLowerCase().includes(q));
+  if(hideCompleted) items = items.filter(a => !completedAssignments[a.id]);
+  const list = items.length ? items.map(a=>{
+    const done = !!completedAssignments[a.id];
+    const dl = daysLeft(a.due);
+    let badge;
+    if(dl < 0) badge = `<span class="badge overdue">Overdue</span>`;
+    else if(dl===0) badge = `<span class="badge soon">Due today</span>`;
+    else if(dl<=2) badge = `<span class="badge soon">${dl}d left</span>`;
+    else badge = `<span class="badge ok">${dl}d left</span>`;
+    return `
+    <div class="card" style="${done?'opacity:.55':''}">
+      <div class="accent-bar" style="background:${colorForCode(a.code)}"></div>
+      <div class="assign-top">
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+          <input type="checkbox" ${done?'checked':''} onchange="toggleAssignmentDone('${a.id}')" style="width:19px; height:19px; margin-top:8px; accent-color:var(--teal); flex:none;" />
+          <div>
+            <span class="chip" style="background:${colorForCode(a.code)}22;color:${colorForCode(a.code)}">${esc(a.code)}</span>
+            <p class="ann-title" style="margin-top:6px; ${done?'text-decoration:line-through;':''}">${esc(a.title)}</p>
+          </div>
+        </div>
+        ${badge}
+      </div>
+      ${a.desc?`<p class="assign-desc">${esc(a.desc)}</p>`:''}
+      ${a.image?`<img src="${escAttr(a.image)}" class="img-thumb" onclick="openLightbox('${escAttr(a.image)}')" />`:''}
+      <div class="ann-foot">
+        <span class="assign-due">DUE ${new Date(a.due).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</span>
+        ${isAdmin?`<span><button class="del-btn" style="color:var(--teal)" onclick="openAssignmentForm('${a.id}')">Edit</button> <button class="del-btn" onclick="deleteAssignment('${a.id}')">Delete</button></span>`:''}
+      </div>
+    </div>`;
+  }).join('') : `<div class="empty">${q?'No assignments match your search.':(hideCompleted?'All done — nothing pending! 🎉':'No assignments posted. 🎉')}</div>`;
+
+  return `
+    <div class="sec-head">
+      <h2>📝 Assignments</h2>
+      ${isAdmin?`<button class="add-btn" onclick="openAssignmentForm()">+</button>`:''}
+    </div>
+    <div class="search-box"><input id="assignSearchInput" placeholder="🔍 Search assignments..." value="${escAttr(searchAssignments)}" oninput="setSearchAssignments(this.value)" /></div>
+    <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted); margin:-4px 0 14px;">
+      <input type="checkbox" ${hideCompleted?'checked':''} onchange="toggleHideCompleted()" style="accent-color:var(--teal);" /> Hide completed
+    </label>
+    ${list}
+  `;
+}
+window.setSearchAssignments = function(v){ searchAssignments = v; renderInPlace('assignments'); }
+window.toggleAssignmentDone = function(id){
+  if(completedAssignments[id]) delete completedAssignments[id];
+  else completedAssignments[id] = true;
+  try{ localStorage.setItem('completed-assignments', JSON.stringify(completedAssignments)); }catch(e){}
+  render();
+}
+window.toggleHideCompleted = function(){ hideCompleted = !hideCompleted; render(); }
+window.openAssignmentForm = function(id){
+  editing.assignment = id || null;
+  const existing = id ? data.assignments.find(a=>a.id===id) : null;
+  openModal(`
+    <div class="modal-head"><h3>${existing?'Edit':'New'} Assignment</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <div class="field"><label class="f-label">COURSE CODE</label><input id="asCode" placeholder="e.g. CSC102" value="${existing?escAttr(existing.code):''}" /></div>
+    <div class="field"><label class="f-label">TITLE</label><input id="asTitle" placeholder="e.g. Assignment 2 — Recursion" value="${existing?escAttr(existing.title):''}" /></div>
+    <div class="field"><label class="f-label">DESCRIPTION (optional)</label><textarea id="asDesc" placeholder="What needs to be submitted...">${existing?esc(existing.desc):''}</textarea></div>
+    <div class="field"><label class="f-label">DUE DATE</label><input type="date" id="asDue" value="${existing?existing.due:''}" /></div>
+    ${imageFieldHtml('as', existing?existing.image:null)}
+    <button class="primary" onclick="submitAssignment()">${existing?'Save changes':'Add assignment'}</button>
+  `);
+}
+window.submitAssignment = async function(){
+  const code = document.getElementById('asCode').value.trim().toUpperCase();
+  const title = document.getElementById('asTitle').value.trim();
+  const desc = document.getElementById('asDesc').value.trim();
+  const due = document.getElementById('asDue').value;
+  if(!code || !title || !due){ showToast('Fill course, title and due date'); return; }
+  try{
+    if(editing.assignment){
+      const existing = data.assignments.find(a=>a.id===editing.assignment);
+      let image;
+      try{ image = await resolveImageUpload('as', existing?existing.image:null); }
+      catch(e){ showToast('Image upload failed — saved without new photo'); image = existing?existing.image:null; }
+      await sbUpdate('assignments', editing.assignment, { code, title, description: desc, due, image_url: image });
+      if(existing){ existing.code=code; existing.title=title; existing.desc=desc; existing.due=due; existing.image=image; }
+      editing.assignment = null;
+      closeModal(); showToast('Updated ✓'); render();
+    } else {
+      const id = uid();
+      let image = null;
+      try{ image = await resolveImageUpload('as', null); }
+      catch(e){ showToast('Image upload failed — saving without photo'); }
+      await sbInsert('assignments', { id, code, title, description: desc, due, image_url: image });
+      data.assignments.push({ id, code, title, desc, due, image });
+      closeModal(); showToast('Added ✓'); render();
+    }
+  }catch(e){ showToast('Failed to save — check connection'); }
+}
+window.deleteAssignment = async function(id){
+  try{
+    await sbDelete('assignments', id);
+    data.assignments = data.assignments.filter(a=>a.id!==id);
+    render();
+  }catch(e){ showToast('Failed to delete — try again'); }
+}
+
+/* ============ TIMETABLE ============ */
+function renderTimetable(){
+  const slots = (data.timetable[activeDay]||[]).slice().sort((a,b)=>a.start.localeCompare(b.start));
+  const pills = DAYS.map(d=>`<button class="${d===activeDay?'active':''}" onclick="setDay('${d}')">${d.slice(0,3)}</button>`).join('');
+  const list = slots.length ? slots.map(s=>`
+    <div class="card">
+      <div class="accent-bar" style="background:${colorForCode(s.code)}"></div>
+      <div class="class-item">
+        <div class="time-col mono">${s.start}<br/><span style="opacity:.5">${s.end}</span></div>
+        <div class="info">
+          <h3>${esc(s.name)} <span class="chip" style="background:${colorForCode(s.code)}22;color:${colorForCode(s.code)}">${esc(s.code)}</span></h3>
+          <div class="meta"><span>📍 ${esc(s.venue||'TBA')}</span>${s.lecturer?`<span>👤 ${esc(s.lecturer)}</span>`:''}</div>
+          ${s.image?`<img src="${escAttr(s.image)}" class="img-thumb" onclick="openLightbox('${escAttr(s.image)}')" />`:''}
+        </div>
+        ${isAdmin?`<button class="del-btn" style="color:var(--teal)" onclick="openSlotForm('${s.id}')">Edit</button><button class="del-btn" onclick="deleteSlot('${s.id}')">Delete</button>`:''}
+      </div>
+    </div>`).join('') : `<div class="empty">No classes on ${activeDay}.</div>`;
+
+  return `
+    <div class="sec-head">
+      <h2>🗓️ Timetable</h2>
+      ${isAdmin?`<button class="add-btn" onclick="openSlotForm()">+</button>`:''}
+    </div>
+    <button class="ghost" style="margin-bottom:14px;" onclick="exportTimetableICS()">📅 Add whole timetable to my phone calendar</button>
+    <div class="day-pills">${pills}</div>
+    ${list}
+  `;
+}
+window.setDay = function(d){ activeDay = d; render(); }
+window.openSlotForm = function(id){
+  editing.slot = id || null;
+  let existing = null;
+  if(id){ for(const d of Object.keys(data.timetable)){ const f = data.timetable[d].find(s=>s.id===id); if(f){ existing = {...f, day:d}; break; } } }
+  const opts = DAYS.map(d=>`<option value="${d}" ${(existing?existing.day===d:d===activeDay)?'selected':''}>${d}</option>`).join('');
+  openModal(`
+    <div class="modal-head"><h3>${existing?'Edit':'New'} Timetable Slot</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <div class="field"><label class="f-label">DAY</label><select id="ttDay">${opts}</select></div>
+    <div class="field"><label class="f-label">COURSE CODE</label><input id="ttCode" placeholder="e.g. CSC101" value="${existing?escAttr(existing.code):''}" /></div>
+    <div class="field"><label class="f-label">COURSE NAME</label><input id="ttName" placeholder="e.g. Intro to Computer Science" value="${existing?escAttr(existing.name):''}" /></div>
+    <div class="two-col">
+      <div class="field"><label class="f-label">START</label><input type="time" id="ttStart" value="${existing?existing.start:''}" /></div>
+      <div class="field"><label class="f-label">END</label><input type="time" id="ttEnd" value="${existing?existing.end:''}" /></div>
+    </div>
+    <div class="field"><label class="f-label">VENUE</label><input id="ttVenue" placeholder="e.g. LT2" value="${existing?escAttr(existing.venue||''):''}" /></div>
+    <div class="field"><label class="f-label">LECTURER (optional)</label><input id="ttLect" placeholder="e.g. Dr. Adeyemi" value="${existing?escAttr(existing.lecturer||''):''}" /></div>
+    ${imageFieldHtml('tt', existing?existing.image:null)}
+    <button class="primary" onclick="submitSlot()">${existing?'Save changes':'Add to timetable'}</button>
+  `);
+}
+window.submitSlot = async function(){
+  const day = document.getElementById('ttDay').value;
+  const code = document.getElementById('ttCode').value.trim().toUpperCase();
+  const name = document.getElementById('ttName').value.trim();
+  const start = document.getElementById('ttStart').value;
+  const end = document.getElementById('ttEnd').value;
+  const venue = document.getElementById('ttVenue').value.trim();
+  const lecturer = document.getElementById('ttLect').value.trim();
+  if(!code || !name || !start || !end){ showToast('Fill course, name, start and end'); return; }
+  try{
+    if(editing.slot){
+      const slotId = editing.slot;
+      let existingImg = null;
+      for(const d of Object.keys(data.timetable)){ const f = data.timetable[d].find(s=>s.id===slotId); if(f){ existingImg = f.image; break; } }
+      let image;
+      try{ image = await resolveImageUpload('tt', existingImg); }
+      catch(e){ showToast('Image upload failed — saved without new photo'); image = existingImg; }
+      await sbUpdate('timetable_slots', slotId, { day, code, name, start_time:start, end_time:end, venue, lecturer, image_url: image });
+      for(const d of Object.keys(data.timetable)){ data.timetable[d] = data.timetable[d].filter(s=>s.id!==slotId); }
+      if(!data.timetable[day]) data.timetable[day] = [];
+      data.timetable[day].push({ id:slotId, code, name, start, end, venue, lecturer, image });
+      editing.slot = null;
+      activeDay = day;
+      closeModal(); showToast('Updated ✓'); render();
+    } else {
+      const id = uid();
+      let image = null;
+      try{ image = await resolveImageUpload('tt', null); }
+      catch(e){ showToast('Image upload failed — saving without photo'); }
+      await sbInsert('timetable_slots', { id, day, code, name, start_time:start, end_time:end, venue, lecturer, image_url: image });
+      if(!data.timetable[day]) data.timetable[day] = [];
+      data.timetable[day].push({ id, code, name, start, end, venue, lecturer, image });
+      activeDay = day;
+      closeModal(); showToast('Added ✓'); render();
+    }
+  }catch(e){ showToast('Failed to save — check connection'); }
+}
+window.deleteSlot = async function(id){
+  try{
+    await sbDelete('timetable_slots', id);
+    for(const d of Object.keys(data.timetable)){
+      data.timetable[d] = data.timetable[d].filter(s=>s.id!==id);
+    }
+    render();
+  }catch(e){ showToast('Failed to delete — try again'); }
+}
+
+/* ============ ICS CALENDAR EXPORT ============ */
+function icsEscape(s){ return (s||'').replace(/\\/g,'\\\\').replace(/,/g,'\\,').replace(/;/g,'\\;'); }
+function nextDateForWeekday(dayName){
+  const map = {Sunday:0,Monday:1,Tuesday:2,Wednesday:3,Thursday:4,Friday:5,Saturday:6};
+  const target = map[dayName];
+  const now = new Date();
+  const diff = (target - now.getDay() + 7) % 7;
+  const d = new Date(now); d.setDate(now.getDate()+diff);
+  return d;
+}
+function fmtICSDate(date, timeStr){
+  const [h,m] = timeStr.split(':').map(Number);
+  const d = new Date(date); d.setHours(h,m,0,0);
+  const pad = n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+}
+window.exportTimetableICS = function(){
+  const dayCode = {Monday:'MO',Tuesday:'TU',Wednesday:'WE',Thursday:'TH',Friday:'FR',Saturday:'SA',Sunday:'SU'};
+  let allSlots = [];
+  Object.keys(data.timetable).forEach(day=>{
+    (data.timetable[day]||[]).forEach(s=> allSlots.push({...s, day}));
+  });
+  if(!allSlots.length){ showToast('No timetable slots to export yet'); return; }
+  const until = new Date(); until.setDate(until.getDate() + 15*7);
+  const untilStr = until.toISOString().slice(0,10).replace(/-/g,'') + 'T235959Z';
+
+  let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Vortex.io Portal//EN\r\nCALSCALE:GREGORIAN\r\n';
+  allSlots.forEach(s=>{
+    const startDate = nextDateForWeekday(s.day);
+    const dtStart = fmtICSDate(startDate, s.start);
+    const dtEnd = fmtICSDate(startDate, s.end);
+    ics += 'BEGIN:VEVENT\r\n';
+    ics += `UID:${s.id}@vortex-io-portal\r\n`;
+    ics += `SUMMARY:${icsEscape((s.code?s.code+' — ':'')+s.name)}\r\n`;
+    ics += `DTSTART:${dtStart}\r\n`;
+    ics += `DTEND:${dtEnd}\r\n`;
+    ics += `RRULE:FREQ=WEEKLY;BYDAY=${dayCode[s.day]};UNTIL=${untilStr}\r\n`;
+    if(s.venue) ics += `LOCATION:${icsEscape(s.venue)}\r\n`;
+    if(s.lecturer) ics += `DESCRIPTION:${icsEscape('Lecturer: '+s.lecturer)}\r\n`;
+    ics += 'END:VEVENT\r\n';
+  });
+  ics += 'END:VCALENDAR\r\n';
+
+  const blob = new Blob([ics], {type:'text/calendar;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'vortex-timetable.ics';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Calendar file downloaded ✓');
+}
+
+/* ============ MATERIALS ============ */
+function renderMaterials(){
+  const items = data.materials.slice().sort((a,b)=> b.ts - a.ts);
+  const list = items.length ? items.map(m=>`
+    <div class="card">
+      <div class="accent-bar" style="background:${colorForCode(m.code)}"></div>
+      <span class="chip" style="background:${colorForCode(m.code)}22;color:${colorForCode(m.code)}">${esc(m.code||'GEN')}</span>
+      <p class="ann-title" style="margin-top:6px">${esc(m.title)}</p>
+      ${m.desc?`<p class="ann-body">${esc(m.desc)}</p>`:''}
+      ${m.image?`<img src="${escAttr(m.image)}" class="img-thumb" onclick="openLightbox('${escAttr(m.image)}')" />`:''}
+      <div class="ann-foot">
+        ${m.link?`<a href="${escAttr(m.link)}" target="_blank" rel="noopener" style="color:var(--teal); font-weight:700; text-decoration:none;">Open →</a>`:'<span></span>'}
+        ${isAdmin?`<span><button class="del-btn" style="color:var(--teal)" onclick="openMaterialForm('${m.id}')">Edit</button> <button class="del-btn" onclick="deleteMaterial('${m.id}')">Delete</button></span>`:''}
+      </div>
+    </div>`).join('') : `<div class="empty">No materials shared yet — notes, slides, and past questions will show up here.</div>`;
+
+  return `
+    <button class="back-link" onclick="goTab('more')">← More</button>
+    <div class="sec-head">
+      <h2>📁 Course Materials</h2>
+      ${isAdmin?`<button class="add-btn" onclick="openMaterialForm()">+</button>`:''}
+    </div>
+    ${list}
+  `;
+}
+window.openMaterialForm = function(id){
+  editing.material = id || null;
+  const existing = id ? data.materials.find(m=>m.id===id) : null;
+  openModal(`
+    <div class="modal-head"><h3>${existing?'Edit':'New'} Material</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <div class="field"><label class="f-label">COURSE CODE (optional)</label><input id="matCode" placeholder="e.g. CSC101" value="${existing?escAttr(existing.code||''):''}" /></div>
+    <div class="field"><label class="f-label">TITLE</label><input id="matTitle" placeholder="e.g. Week 3 slides — Algorithms" value="${existing?escAttr(existing.title):''}" /></div>
+    <div class="field"><label class="f-label">NOTE (optional)</label><textarea id="matDesc" placeholder="Any context...">${existing?esc(existing.desc):''}</textarea></div>
+    <div class="field"><label class="f-label">LINK (optional if you attach a photo)</label><input id="matLink" placeholder="Google Drive / YouTube / any link" value="${existing?escAttr(existing.link||''):''}" /></div>
+    ${imageFieldHtml('mat', existing?existing.image:null)}
+    <button class="primary" onclick="submitMaterial()">${existing?'Save changes':'Add material'}</button>
+  `);
+}
+window.submitMaterial = async function(){
+  const code = document.getElementById('matCode').value.trim().toUpperCase();
+  const title = document.getElementById('matTitle').value.trim();
+  const desc = document.getElementById('matDesc').value.trim();
+  let link = document.getElementById('matLink').value.trim();
+  const hasFile = document.getElementById('matImageFile').files.length > 0;
+  if(!title || (!link && !hasFile && !(editing.material && data.materials.find(m=>m.id===editing.material)?.image))){
+    showToast('Add a title, and a link or a photo'); return;
+  }
+  if(link && !/^https?:\/\//i.test(link)) link = 'https://' + link;
+  try{
+    if(editing.material){
+      const existing = data.materials.find(m=>m.id===editing.material);
+      let image;
+      try{ image = await resolveImageUpload('mat', existing?existing.image:null); }
+      catch(e){ showToast('Image upload failed — saved without new photo'); image = existing?existing.image:null; }
+      await sbUpdate('materials', editing.material, { code, title, description: desc, link, image_url: image });
+      if(existing){ existing.code=code; existing.title=title; existing.desc=desc; existing.link=link; existing.image=image; }
+      editing.material = null;
+      closeModal(); showToast('Updated ✓'); render();
+    } else {
+      let image = null;
+      try{ image = await resolveImageUpload('mat', null); }
+      catch(e){ showToast('Image upload failed — saving without photo'); }
+      const row = { id:uid(), code, title, desc, link, ts: Date.now(), image };
+      await sbInsert('materials', { id:row.id, code, title, description: desc, link, ts:row.ts, image_url: image });
+      data.materials.push(row);
+      closeModal(); showToast('Added ✓'); render();
+    }
+  }catch(e){ showToast('Failed to save — check connection'); }
+}
+window.deleteMaterial = async function(id){
+  try{
+    await sbDelete('materials', id);
+    data.materials = data.materials.filter(m=>m.id!==id);
+    render();
+  }catch(e){ showToast('Failed to delete — try again'); }
+}
+
+/* ============ FAQ ============ */
+let openFaqId = null;
+function renderFaq(){
+  const items = data.faq.slice().sort((a,b)=> b.ts - a.ts);
+  const list = items.length ? items.map(f=>`
+    <div class="card">
+      <p class="faq-title" onclick="toggleFaq('${f.id}')">${esc(f.title)} <span>${openFaqId===f.id?'−':'+'}</span></p>
+      ${openFaqId===f.id ? `
+        ${f.content?`<p class="faq-content">${esc(f.content)}</p>`:''}
+        ${f.link?`<a href="${escAttr(f.link)}" target="_blank" rel="noopener" style="color:var(--teal); font-weight:700; text-decoration:none; font-size:13px;">Open link →</a>`:''}
+        ${isAdmin?`<div class="ann-foot" style="margin-top:8px;"><span></span><span><button class="del-btn" style="color:var(--teal)" onclick="openFaqForm('${f.id}')">Edit</button> <button class="del-btn" onclick="deleteFaq('${f.id}')">Delete</button></span></div>`:''}
+      ` : ''}
+    </div>`).join('') : `<div class="empty">No FAQs yet. Common questions and useful links will show up here.</div>`;
+
+  return `
+    <button class="back-link" onclick="goTab('more')">← More</button>
+    <div class="sec-head">
+      <h2>❓ FAQs & Links</h2>
+      ${isAdmin?`<button class="add-btn" onclick="openFaqForm()">+</button>`:''}
+    </div>
+    ${list}
+  `;
+}
+window.toggleFaq = function(id){ openFaqId = (openFaqId===id) ? null : id; render(); }
+window.openFaqForm = function(id){
+  editing.faq = id || null;
+  const existing = id ? data.faq.find(f=>f.id===id) : null;
+  openModal(`
+    <div class="modal-head"><h3>${existing?'Edit':'New'} FAQ / Link</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <div class="field"><label class="f-label">QUESTION / TITLE</label><input id="faqTitle" placeholder="e.g. Where is the exam venue?" value="${existing?escAttr(existing.title):''}" /></div>
+    <div class="field"><label class="f-label">ANSWER (optional)</label><textarea id="faqContent" placeholder="Write the answer...">${existing?esc(existing.content||''):''}</textarea></div>
+    <div class="field"><label class="f-label">LINK (optional)</label><input id="faqLink" placeholder="e.g. link to portal, group chat, form" value="${existing?escAttr(existing.link||''):''}" /></div>
+    <button class="primary" onclick="submitFaq()">${existing?'Save changes':'Add FAQ'}</button>
+  `);
+}
+window.submitFaq = async function(){
+  const title = document.getElementById('faqTitle').value.trim();
+  const content = document.getElementById('faqContent').value.trim();
+  let link = document.getElementById('faqLink').value.trim();
+  if(!title){ showToast('Add a question or title'); return; }
+  if(link && !/^https?:\/\//i.test(link)) link = 'https://' + link;
+  try{
+    if(editing.faq){
+      await sbUpdate('faq_items', editing.faq, { title, content, link });
+      const item = data.faq.find(f=>f.id===editing.faq);
+      if(item){ item.title=title; item.content=content; item.link=link; }
+      editing.faq = null;
+      closeModal(); showToast('Updated ✓'); render();
+    } else {
+      const row = { id:uid(), title, content, link, ts: Date.now() };
+      await sbInsert('faq_items', row);
+      data.faq.push(row);
+      closeModal(); showToast('Added ✓'); render();
+    }
+  }catch(e){ showToast('Failed to save — check connection'); }
+}
+window.deleteFaq = async function(id){
+  try{
+    await sbDelete('faq_items', id);
+    data.faq = data.faq.filter(f=>f.id!==id);
+    render();
+  }catch(e){ showToast('Failed to delete — try again'); }
+}
+
+/* ============ POLLS ============ */
+function votesForPoll(pollId){
+  return data.pollVotes.filter(v=>v.poll_id===pollId);
+}
+function myVoteForPoll(pollId){
+  return data.pollVotes.find(v=>v.poll_id===pollId && v.voter_id===voterId);
+}
+function renderPolls(){
+  const items = data.polls.slice().sort((a,b)=> b.ts - a.ts);
+  const list = items.length ? items.map(p=>{
+    const votes = votesForPoll(p.id);
+    const total = votes.length;
+    const mine = myVoteForPoll(p.id);
+    const opts = (p.options||[]).map((opt, idx)=>{
+      const count = votes.filter(v=>v.option_index===idx).length;
+      const pct = total ? Math.round((count/total)*100) : 0;
+      const showResults = mine || !p.active;
+      return `
+        <div class="poll-opt poll-bar-wrap">
+          ${showResults?`<div class="poll-bar" style="width:${pct}%"></div>`:''}
+          <button ${(!p.active || mine) ? 'disabled' : ''} onclick="submitVote('${p.id}', ${idx})" style="${(!p.active||mine)?'cursor:default;':''}">
+            <span class="txt">${esc(opt)}${mine && mine.option_index===idx ? ' ✓' : ''}</span>
+            ${showResults?`<span class="pct">${pct}% (${count})</span>`:''}
+          </button>
+        </div>`;
+    }).join('');
+    return `
+    <div class="card">
+      <p class="poll-q">${esc(p.question)}</p>
+      ${opts}
+      <div class="poll-meta">${total} vote${total===1?'':'s'} · ${p.active ? 'Open' : 'Closed'}${isAdmin?` · <button class="del-btn" style="color:var(--teal)" onclick="togglePollActive('${p.id}', ${!p.active})">${p.active?'Close poll':'Reopen'}</button> · <button class="del-btn" onclick="deletePoll('${p.id}')">Delete</button>`:''}</div>
+    </div>`;
+  }).join('') : `<div class="empty">No polls yet — reps can create one to get quick class feedback.</div>`;
+
+  return `
+    <button class="back-link" onclick="goTab('more')">← More</button>
+    <div class="sec-head">
+      <h2>🗳️ Polls</h2>
+      ${isAdmin?`<button class="add-btn" onclick="openPollForm()">+</button>`:''}
+    </div>
+    ${list}
+  `;
+}
+window.openPollForm = function(){
+  openModal(`
+    <div class="modal-head"><h3>New Poll</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <div class="field"><label class="f-label">QUESTION</label><input id="pollQ" placeholder="e.g. Best time for group study?" /></div>
+    <div class="field"><label class="f-label">OPTIONS (one per line, 2-6)</label><textarea id="pollOpts" placeholder="Saturday 10am&#10;Saturday 2pm&#10;Sunday after class"></textarea></div>
+    <button class="primary" onclick="submitPoll()">Create poll</button>
+  `);
+}
+window.submitPoll = async function(){
+  const question = document.getElementById('pollQ').value.trim();
+  const options = document.getElementById('pollOpts').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!question || options.length<2){ showToast('Add a question and at least 2 options'); return; }
+  if(options.length>6){ showToast('Max 6 options'); return; }
+  const row = { id:uid(), question, options, ts: Date.now(), active:true };
+  try{
+    await sbInsert('polls', row);
+    data.polls.push(row);
+    closeModal(); showToast('Poll created ✓'); render();
+  }catch(e){ showToast('Failed to create — check connection'); }
+}
+window.submitVote = async function(pollId, optionIndex){
+  if(myVoteForPoll(pollId)){ showToast('You already voted'); return; }
+  const poll = data.polls.find(p=>p.id===pollId);
+  if(!poll || !poll.active){ showToast('This poll is closed'); return; }
+  const row = { id:uid(), poll_id:pollId, option_index:optionIndex, voter_id:voterId, ts:Date.now() };
+  try{
+    await sbInsert('poll_votes', row);
+    data.pollVotes.push(row);
+    showToast('Vote counted ✓'); render();
+  }catch(e){ showToast('Failed to vote — check connection'); }
+}
+window.togglePollActive = async function(pollId, newActive){
+  try{
+    await sbUpdate('polls', pollId, { active:newActive });
+    const p = data.polls.find(p=>p.id===pollId);
+    if(p) p.active = newActive;
+    render();
+  }catch(e){ showToast('Failed to update — try again'); }
+}
+window.deletePoll = async function(pollId){
+  try{
+    await sbDelete('polls', pollId);
+    data.polls = data.polls.filter(p=>p.id!==pollId);
+    data.pollVotes = data.pollVotes.filter(v=>v.poll_id!==pollId);
+    render();
+  }catch(e){ showToast('Failed to delete — try again'); }
+}
+
+/* ============ STUDENT DIRECTORY ============ */
+function renderDirectory(){
+  const items = data.directory.slice().sort((a,b)=> a.name.localeCompare(b.name));
+  const list = items.length ? items.map(d=>`
+    <div class="card">
+      <p class="ann-title">${esc(d.name)}</p>
+      ${d.skills?`<p class="ann-body" style="margin-bottom:4px;"><b style="color:var(--muted); font-weight:600;">Skills/interests:</b> ${esc(d.skills)}</p>`:''}
+      ${d.contact?`<p class="ann-body" style="margin-bottom:0;"><b style="color:var(--muted); font-weight:600;">Contact:</b> ${esc(d.contact)}</p>`:''}
+      ${isAdmin?`<div class="ann-foot" style="margin-top:8px;"><span></span><button class="del-btn" onclick="deleteDirectoryEntry('${d.id}')">Remove</button></div>`:''}
+    </div>`).join('') : `<div class="empty">No one's added themselves yet — be the first!</div>`;
+
+  return `
+    <button class="back-link" onclick="goTab('more')">← More</button>
+    <div class="sec-head">
+      <h2>👥 Student Directory</h2>
+      <button class="add-btn" onclick="openDirectoryForm()">+</button>
+    </div>
+    <p style="font-size:12px; color:var(--muted); margin:-6px 0 14px;">Visible to your whole class — only add what you're comfortable sharing.</p>
+    ${list}
+  `;
+}
+window.openDirectoryForm = function(){
+  openModal(`
+    <div class="modal-head"><h3>Add Yourself</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <div class="field"><label class="f-label">NAME</label><input id="dirName" placeholder="e.g. Tolu Adebayo" /></div>
+    <div class="field"><label class="f-label">SKILLS / INTERESTS (optional)</label><input id="dirSkills" placeholder="e.g. Python, UI design, good at maths" /></div>
+    <div class="field"><label class="f-label">CONTACT (optional)</label><input id="dirContact" placeholder="e.g. WhatsApp number or @handle" /></div>
+    <button class="primary" onclick="submitDirectory()">Add me to the directory</button>
+  `);
+}
+window.submitDirectory = async function(){
+  const name = document.getElementById('dirName').value.trim();
+  const skills = document.getElementById('dirSkills').value.trim();
+  const contact = document.getElementById('dirContact').value.trim();
+  if(!name){ showToast('Add your name'); return; }
+  const row = { id:uid(), name, skills, contact, ts: Date.now() };
+  try{
+    await sbInsert('directory', row);
+    data.directory.push(row);
+    closeModal(); showToast('Added ✓'); render();
+  }catch(e){ showToast('Failed to save — check connection'); }
+}
+window.deleteDirectoryEntry = async function(id){
+  try{
+    await sbDelete('directory', id);
+    data.directory = data.directory.filter(d=>d.id!==id);
+    render();
+  }catch(e){ showToast('Failed to delete — try again'); }
+}
+
+/* ============ SUGGESTION BOX ============ */
+function renderSuggestions(){
+  const adminList = isAdmin ? data.suggestions.slice().sort((a,b)=>b.ts-a.ts).map(s=>`
+    <div class="card">
+      <p class="ann-body" style="margin-bottom:8px;">${esc(s.content)}</p>
+      <div class="ann-foot"><span>${new Date(s.ts).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span>
+      <button class="del-btn" onclick="deleteSuggestion('${s.id}')">Delete</button></div>
+    </div>`).join('') : '';
+
+  return `
+    <button class="back-link" onclick="goTab('more')">← More</button>
+    <div class="sec-head"><h2>💬 Suggestion Box</h2></div>
+    <div class="card">
+      <label class="f-label" style="margin-bottom:8px;">SEND ANONYMOUS FEEDBACK TO YOUR REPS</label>
+      <textarea id="suggContent" placeholder="Share a concern, idea, or complaint. This is not tied to your name."></textarea>
+      <button class="primary" style="margin-top:10px;" onclick="submitSuggestion()">Send anonymously</button>
+    </div>
+    ${isAdmin ? `<div class="sec-head"><h2 style="font-size:13px;">Submissions (admin only)</h2></div>${adminList || '<div class="empty">No submissions yet.</div>'}` : `<p style="font-size:12px; color:var(--muted); text-align:center; margin-top:8px;">Only your course reps can read submissions.</p>`}
+  `;
+}
+window.submitSuggestion = async function(){
+  const content = document.getElementById('suggContent').value.trim();
+  if(!content){ showToast('Write something first'); return; }
+  const row = { id:uid(), content, ts: Date.now() };
+  try{
+    await sbInsert('suggestions', row);
+    if(isAdmin) data.suggestions.push(row);
+    document.getElementById('suggContent').value = '';
+    showToast('Sent anonymously ✓'); render();
+  }catch(e){ showToast('Failed to send — check connection'); }
+}
+window.deleteSuggestion = async function(id){
+  try{
+    await sbDelete('suggestions', id);
+    data.suggestions = data.suggestions.filter(s=>s.id!==id);
+    render();
+  }catch(e){ showToast('Failed to delete — try again'); }
+}
+
+/* ============ SYLLABUS TRACKER ============ */
+window.editingSyllabus = null;
+function renderSyllabus(){
+  const byCode = {};
+  data.syllabus.forEach(s=>{ (byCode[s.code] = byCode[s.code]||[]).push(s); });
+  const codes = Object.keys(byCode).sort();
+  const sections = codes.length ? codes.map(code=>{
+    const items = byCode[code].slice().sort((a,b)=>(a.order||0)-(b.order||0));
+    const done = items.filter(i=>i.covered).length;
+    const pct = items.length ? Math.round((done/items.length)*100) : 0;
+    const rows = items.map(i=>`
+      <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line);">
+        <input type="checkbox" ${i.covered?'checked':''} ${isAdmin?`onchange="toggleSyllabusCovered('${i.id}', this.checked)"`:'disabled'} style="width:18px; height:18px; accent-color:var(--teal); flex:none;" />
+        <span style="flex:1; font-size:13.5px; ${i.covered?'color:var(--muted); text-decoration:line-through;':''}">${esc(i.topic)}</span>
+        ${isAdmin?`<button class="del-btn" onclick="deleteSyllabusItem('${i.id}')">✕</button>`:''}
+      </div>`).join('');
+    return `
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span class="chip" style="background:${colorForCode(code)}22;color:${colorForCode(code)}">${esc(code)}</span>
+          <span style="font-size:12px; color:var(--muted)" class="mono">${done}/${items.length} covered</span>
+        </div>
+        <div style="background:var(--bg-elev-2); border-radius:8px; height:8px; overflow:hidden; margin-bottom:6px;">
+          <div style="width:${pct}%; height:100%; background:${colorForCode(code)};"></div>
+        </div>
+        ${rows}
+      </div>`;
+  }).join('') : `<div class="empty">No syllabus topics added yet.</div>`;
+
+  return `
+    <button class="back-link" onclick="goTab('more')">← More</button>
+    <div class="sec-head">
+      <h2>📖 Syllabus Tracker</h2>
+      ${isAdmin?`<button class="add-btn" onclick="openSyllabusForm()">+</button>`:''}
+    </div>
+    ${sections}
+  `;
+}
+window.openSyllabusForm = function(){
+  openModal(`
+    <div class="modal-head"><h3>New Topic</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <div class="field"><label class="f-label">COURSE CODE</label><input id="sylCode" placeholder="e.g. CSC101" /></div>
+    <div class="field"><label class="f-label">TOPIC</label><input id="sylTopic" placeholder="e.g. Recursion & Backtracking" /></div>
+    <div class="field"><label class="f-label">ORDER (week/position number)</label><input type="number" id="sylOrder" placeholder="e.g. 3" /></div>
+    <button class="primary" onclick="submitSyllabus()">Add topic</button>
+  `);
+}
+window.submitSyllabus = async function(){
+  const code = document.getElementById('sylCode').value.trim().toUpperCase();
+  const topic = document.getElementById('sylTopic').value.trim();
+  const order = parseInt(document.getElementById('sylOrder').value) || 0;
+  if(!code || !topic){ showToast('Fill course and topic'); return; }
+  const id = uid();
+  try{
+    await sbInsert('syllabus_items', { id, code, topic, order_num:order, covered:false, ts:Date.now() });
+    data.syllabus.push({ id, code, topic, order, covered:false });
+    closeModal(); showToast('Added ✓'); render();
+  }catch(e){ showToast('Failed to save — check connection'); }
+}
+window.toggleSyllabusCovered = async function(id, covered){
+  try{
+    await sbUpdate('syllabus_items', id, { covered });
+    const item = data.syllabus.find(s=>s.id===id);
+    if(item) item.covered = covered;
+    render();
+  }catch(e){ showToast('Failed to update — try again'); }
+}
+window.deleteSyllabusItem = async function(id){
+  try{
+    await sbDelete('syllabus_items', id);
+    data.syllabus = data.syllabus.filter(s=>s.id!==id);
+    render();
+  }catch(e){ showToast('Failed to delete — try again'); }
+}
+
+/* ============ EXAM COUNTDOWN ============ */
+function renderExams(){
+  const items = data.exams.slice().sort((a,b)=> a.date.localeCompare(b.date));
+  const list = items.length ? items.map(e=>{
+    const dl = daysLeftForDate(e.date);
+    let badge;
+    if(dl < 0) badge = `<span class="badge overdue">Past</span>`;
+    else if(dl===0) badge = `<span class="badge overdue">Today</span>`;
+    else if(dl<=3) badge = `<span class="badge soon">${dl}d to go</span>`;
+    else badge = `<span class="badge ok">${dl}d to go</span>`;
+    return `
+    <div class="card">
+      <div class="accent-bar" style="background:${colorForCode(e.code)}"></div>
+      <div class="assign-top">
+        <div>
+          <span class="chip" style="background:${colorForCode(e.code)}22;color:${colorForCode(e.code)}">${esc(e.code)}</span>
+          <p class="ann-title" style="margin-top:6px">${esc(e.title)}</p>
+        </div>
+        ${badge}
+      </div>
+      <div class="ann-foot">
+        <span class="assign-due">${new Date(e.date).toLocaleDateString('en-GB',{weekday:'short', day:'numeric',month:'short',year:'numeric'})}${e.venue?' · '+esc(e.venue):''}</span>
+        ${isAdmin?`<button class="del-btn" onclick="deleteExam('${e.id}')">Delete</button>`:''}
+      </div>
+    </div>`;
+  }).join('') : `<div class="empty">No exams scheduled yet.</div>`;
+
+  return `
+    <button class="back-link" onclick="goTab('more')">← More</button>
+    <div class="sec-head">
+      <h2>🎯 Exam Countdown</h2>
+      ${isAdmin?`<button class="add-btn" onclick="openExamForm()">+</button>`:''}
+    </div>
+    ${list}
+  `;
+}
+window.openExamForm = function(){
+  openModal(`
+    <div class="modal-head"><h3>New Exam / Test</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <div class="field"><label class="f-label">COURSE CODE</label><input id="examCode" placeholder="e.g. CSC101" /></div>
+    <div class="field"><label class="f-label">TITLE</label><input id="examTitle" placeholder="e.g. Mid-semester test" /></div>
+    <div class="field"><label class="f-label">DATE</label><input type="date" id="examDate" /></div>
+    <div class="field"><label class="f-label">VENUE (optional)</label><input id="examVenue" placeholder="e.g. LT2" /></div>
+    <button class="primary" onclick="submitExam()">Add to countdown</button>
+  `);
+}
+window.submitExam = async function(){
+  const code = document.getElementById('examCode').value.trim().toUpperCase();
+  const title = document.getElementById('examTitle').value.trim();
+  const date = document.getElementById('examDate').value;
+  const venue = document.getElementById('examVenue').value.trim();
+  if(!code || !title || !date){ showToast('Fill course, title and date'); return; }
+  const id = uid();
+  try{
+    await sbInsert('exams', { id, code, title, exam_date:date, venue });
+    data.exams.push({ id, code, title, date, venue });
+    closeModal(); showToast('Added ✓'); render();
+  }catch(e){ showToast('Failed to save — check connection'); }
+}
+window.deleteExam = async function(id){
+  try{
+    await sbDelete('exams', id);
+    data.exams = data.exams.filter(e=>e.id!==id);
+    render();
+  }catch(e){ showToast('Failed to delete — try again'); }
+}
+
+/* ============ CGPA ============ */
+function gradePoint(grade, scale){
+  const s5 = {A:5,B:4,C:3,D:2,E:1,F:0};
+  const s4 = {A:4,B:3.5,C:2.5,D:1.5,E:1,F:0};
+  const map = scale===5 ? s5 : s4;
+  return map[grade] ?? 0;
+}
+function renderCgpa(){
+  const rows = cgpaCourses.map((c,i)=>`
+    <div class="course-row">
+      <input placeholder="Course e.g. CSC101" value="${escAttr(c.name)}" oninput="updateCourse(${i},'name',this.value)" />
+      <input type="number" min="1" max="9" placeholder="Unit" value="${c.unit||''}" oninput="updateCourse(${i},'unit',this.value)" />
+      <select onchange="updateCourse(${i},'grade',this.value)">
+        <option value="">Grade</option>
+        ${['A','B','C','D','E','F'].map(g=>`<option value="${g}" ${c.grade===g?'selected':''}>${g}</option>`).join('')}
+      </select>
+      <button class="rm-row" onclick="removeCourse(${i})">✕</button>
+    </div>`).join('');
+
+  let totalUnits=0, totalPoints=0;
+  cgpaCourses.forEach(c=>{
+    const u = parseFloat(c.unit)||0;
+    if(c.grade){ totalUnits += u; totalPoints += u*gradePoint(c.grade, cgpaScale); }
+  });
+  const semGpa = totalUnits ? (totalPoints/totalUnits) : 0;
+
+  const prevCgpa = parseFloat(cgpaPrev.prevCgpa)||0;
+  const prevUnits = parseFloat(cgpaPrev.prevUnits)||0;
+  let cumu = null;
+  if(prevUnits>0 && totalUnits>0){
+    cumu = ((prevCgpa*prevUnits) + totalPoints) / (prevUnits+totalUnits);
+  }
+
+  return `
+    <button class="back-link" onclick="goTab('more')">← More</button>
+    <div class="sec-head"><h2>🧮 CGPA Calculator</h2></div>
+    <div class="scale-toggle">
+      <button class="${cgpaScale===5?'active':''}" onclick="setScale(5)">5.0 scale</button>
+      <button class="${cgpaScale===4?'active':''}" onclick="setScale(4)">4.0 scale</button>
+    </div>
+    <div class="card">
+      <label class="f-label" style="margin-bottom:10px">THIS SEMESTER'S COURSES</label>
+      ${rows}
+      <button class="ghost" onclick="addCourseRow()" style="margin-top:6px">+ Add course</button>
+    </div>
+    <div class="gpa-result">
+      <div class="num mono">${semGpa.toFixed(2)}</div>
+      <div class="lbl">Semester GPA (${totalUnits} units)</div>
+    </div>
+
+    <div class="card cumu-box">
+      <label class="f-label" style="margin-bottom:10px">CUMULATIVE CGPA (optional)</label>
+      <div class="two-col">
+        <div class="field"><label class="f-label">Previous CGPA</label><input type="number" step="0.01" value="${escAttr(cgpaPrev.prevCgpa)}" oninput="updatePrev('prevCgpa', this.value)" placeholder="e.g. 4.20" /></div>
+        <div class="field"><label class="f-label">Previous total units</label><input type="number" value="${escAttr(cgpaPrev.prevUnits)}" oninput="updatePrev('prevUnits', this.value)" placeholder="e.g. 32" /></div>
+      </div>
+      ${cumu!==null ? `
+        <div class="gpa-result" style="margin-top:6px">
+          <div class="num mono">${cumu.toFixed(2)}</div>
+          <div class="lbl">New Cumulative CGPA</div>
+        </div>` : `<p style="color:var(--muted); font-size:12.5px; margin:6px 0 0;">Enter your previous CGPA and units to see your updated cumulative CGPA.</p>`}
+    </div>
+  `;
+}
+window.setScale = function(s){ cgpaScale = s; render(); }
+window.addCourseRow = function(){ cgpaCourses.push({name:'',unit:'',grade:''}); saveCgpaCourses(); render(); }
+window.removeCourse = function(i){ cgpaCourses.splice(i,1); saveCgpaCourses(); render(); }
+window.updateCourse = function(i, field, val){
+  cgpaCourses[i][field] = val;
+  saveCgpaCourses();
+  render();
+}
+window.updatePrev = function(field, val){
+  cgpaPrev[field] = val;
+  saveCgpaPrev();
+  render();
+}
+
+/* ============ UTIL ============ */
+function esc(s){ return (s||'').toString().replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escAttr(s){ return esc(s); }
+
+/* ============ EVENTS ============ */
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{ activeTab = btn.dataset.tab; render(); });
+});
+document.getElementById('adminBtn').addEventListener('click', ()=>{
+  if(isAdmin){ logoutAdmin(); } else { promptAdmin(); }
+});
+document.getElementById('notifBtn').addEventListener('click', toggleNotifications);
+document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+
+loadAll();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{ /* fine if unavailable */ });
+  });
+}
+
+</script>
+</body>
+</html>
