@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -41,32 +40,30 @@
   --radius: 16px;
 }
 html.light-theme{
-  --bg: #1D2013;
-  --bg-elev: #262B1A;
-  --bg-elev-2: #2F3521;
-  --line: #454C34;
-  --text: #F1EFE4;
-  --muted: #A6A98F;
-  --yellow: #B57BFA;
-  --teal: #4DD8C4;
-  --red: #FF6F7E;
-  --green: #7BE39A;
-  --purple: #9955F0;
-  --pink: #ED8FE0;
-  --orange: #FFAE6B;
-  --text-soft: #DCD9C4;
-  --nav-bg: #262B1Aee;
+  --bg: #F2EEE2;
+  --bg-elev: #FBFAF7;
+  --bg-elev-2: #EAE4D5;
+  --line: #DDD6C4;
+  --text: #262620;
+  --muted: #767357;
+  --yellow: #2F6E77;
+  --teal: #3C8558;
+  --red: #C1443B;
+  --green: #3C8558;
+  --purple: #1F4E56;
+  --pink: #B5657A;
+  --orange: #C97B3D;
+  --text-soft: #3A382F;
+  --nav-bg: #FBFAF7ee;
 }
 html.light-theme body{
-  background:
-    radial-gradient(circle at 15% 0%, #35301f, transparent 45%),
-    radial-gradient(circle at 90% 10%, #2a2038, transparent 40%),
-    var(--bg);
+  background: var(--bg);
 }
 *{box-sizing:border-box;}
 html,body{height:100%;}
 body{
   margin:0;
+  transition: background-color .35s ease;
   background:
     radial-gradient(circle at 15% 0%, #3b115599, transparent 45%),
     radial-gradient(circle at 90% 10%, #1a0b3d99, transparent 40%),
@@ -113,6 +110,7 @@ main{padding:4px 16px 24px; max-width:640px; margin:0 auto;}
   margin-bottom:12px;
   position:relative;
   overflow:hidden;
+  transition: background-color .35s ease, border-color .35s ease;
 }
 .card .accent-bar{position:absolute; left:0; top:0; bottom:0; width:4px;}
 
@@ -400,7 +398,7 @@ button:focus-visible, a:focus-visible{ outline:2px solid var(--teal); outline-of
     <span class="sub">100 Level · 2nd Semester Portal</span>
   </div>
   <div class="header-btns">
-    <button class="admin-btn" id="themeBtn" title="Toggle ash / black theme">⚫</button>
+    <button class="admin-btn" id="themeBtn" title="Toggle light / black theme">⚫</button>
     <button class="admin-btn" id="notifBtn" title="Deadline reminders">🔔</button>
     <button class="admin-btn" id="accountBtn" title="Account">👤</button>
   </div>
@@ -421,6 +419,7 @@ button:focus-visible, a:focus-visible{ outline:2px solid var(--teal); outline-of
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script>
 /* ============ STATE ============ */
 let isAdmin = false;
@@ -697,6 +696,10 @@ window.openLightbox = function(url){
   const img = document.getElementById('lbImg');
   const overlay = document.getElementById('lbOverlay');
   const hint = document.getElementById('lbHint');
+  if(window.gsap){
+    gsap.fromTo('#lbOverlay', {opacity:0}, {opacity:1, duration:0.2});
+    gsap.fromTo('#lbImg', {scale:0.9, opacity:0}, {scale:1, opacity:1, duration:0.28, ease:'power2.out'});
+  }
   let scale=1, panX=0, panY=0, lastDist=null, lastTapTime=0, isPanning=false, startX=0, startY=0;
 
   function applyTransform(){
@@ -756,7 +759,11 @@ window.openLightbox = function(url){
 window.closeLightbox = function(){
   const overlay = document.getElementById('lbOverlay');
   if(overlay && overlay._cleanup) overlay._cleanup();
-  document.getElementById('lightboxRoot').innerHTML = '';
+  if(window.gsap && overlay){
+    gsap.to('#lbOverlay', {opacity:0, duration:0.18, onComplete:()=>{ document.getElementById('lightboxRoot').innerHTML = ''; }});
+  } else {
+    document.getElementById('lightboxRoot').innerHTML = '';
+  }
 }
 
 /* ============ REMINDERS ============ */
@@ -804,10 +811,23 @@ setInterval(()=>checkDeadlineReminders(), 30*60*1000);
 
 /* ============ MODAL HELPERS ============ */
 function openModal(html){
-  document.getElementById('modalRoot').innerHTML = `<div class="overlay" id="ovl"><div class="modal">${html}</div></div>`;
+  document.getElementById('modalRoot').innerHTML = `<div class="overlay" id="ovl"><div class="modal" id="modalInner">${html}</div></div>`;
   document.getElementById('ovl').addEventListener('click', (e)=>{ if(e.target.id==='ovl') closeModal(); });
+  if(window.gsap){
+    gsap.fromTo('#ovl', {opacity:0}, {opacity:1, duration:0.2, ease:'power1.out'});
+    gsap.fromTo('#modalInner', {y:40, opacity:0}, {y:0, opacity:1, duration:0.32, ease:'power3.out'});
+  }
 }
-function closeModal(){ document.getElementById('modalRoot').innerHTML = ''; }
+function closeModal(){
+  const ovl = document.getElementById('ovl');
+  if(!ovl){ document.getElementById('modalRoot').innerHTML = ''; return; }
+  if(window.gsap){
+    gsap.to('#modalInner', {y:40, opacity:0, duration:0.18, ease:'power1.in'});
+    gsap.to('#ovl', {opacity:0, duration:0.22, onComplete:()=>{ document.getElementById('modalRoot').innerHTML = ''; }});
+  } else {
+    document.getElementById('modalRoot').innerHTML = '';
+  }
+}
 
 /* ============ AUTH GATE ============ */
 let authMode = 'signin';
@@ -821,7 +841,18 @@ function unlockApp(){
   document.body.classList.remove('locked');
   document.getElementById('authGate').innerHTML = '';
 }
-window.setAuthMode = function(mode){ authMode = mode; renderAuthGate(); }
+window.setAuthMode = function(mode){
+  authMode = mode;
+  const card = document.querySelector('.auth-card');
+  if(window.gsap && card){
+    gsap.to(card, { opacity:0, y:6, duration:0.1, onComplete:()=>{
+      renderAuthGate();
+      gsap.fromTo('.auth-card', {opacity:0, y:6}, {opacity:1, y:0, duration:0.24, ease:'power2.out'});
+    }});
+  } else {
+    renderAuthGate();
+  }
+}
 
 function renderAuthGate(){
   const root = document.getElementById('authGate');
@@ -965,7 +996,7 @@ function render(){
   const notifOn = ('Notification' in window) && Notification.permission === 'granted';
   document.getElementById('notifBtn').classList.toggle('notif-on', notifOn);
   const isLight = document.documentElement.classList.contains('light-theme');
-  document.getElementById('themeBtn').textContent = isLight ? '🌫️' : '⚫';
+  document.getElementById('themeBtn').textContent = isLight ? '☀️' : '⚫';
 
   const main = document.getElementById('main');
   if(isLoading){ main.innerHTML = `<div class="loading"><div class="spinner"></div><p>Loading class data…</p></div>`; return; }
@@ -985,7 +1016,18 @@ function render(){
   else if(activeTab==='cgpa') main.innerHTML = renderCgpa();
   else if(activeTab==='more') main.innerHTML = renderMore();
 }
-window.goTab = function(t){ activeTab = t; render(); }
+function animatedRender(){
+  const main = document.getElementById('main');
+  if(window.gsap && main){
+    gsap.to(main, { opacity:0, y:8, duration:0.12, ease:'power1.in', onComplete:()=>{
+      render();
+      gsap.fromTo(main, {opacity:0, y:8}, {opacity:1, y:0, duration:0.28, ease:'power2.out'});
+    }});
+  } else {
+    render();
+  }
+}
+window.goTab = function(t){ activeTab = t; animatedRender(); }
 function renderInPlace(tab){
   const main = document.getElementById('main');
   const active = document.activeElement;
@@ -2148,7 +2190,7 @@ function escAttr(s){ return esc(s); }
 
 /* ============ EVENTS ============ */
 document.querySelectorAll('nav.tabs button').forEach(btn=>{
-  btn.addEventListener('click', ()=>{ activeTab = btn.dataset.tab; render(); });
+  btn.addEventListener('click', ()=>{ activeTab = btn.dataset.tab; animatedRender(); });
 });
 document.getElementById('accountBtn').addEventListener('click', ()=>{
   if(myProfile) openAccountMenu();
