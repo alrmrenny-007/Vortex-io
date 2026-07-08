@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2022,4 +2023,163 @@ function chatBubbleHtml(m){
     </div>`;
 }
 function renderChat(){
-  return
+  return `
+    <button class="back-link" onclick="goTab('more')">← More</button>
+    <div class="sec-head"><h2>💬 Live Chat</h2></div>
+    <div class="chat-messages" id="chatMessagesList">${data.chatMessages.map(chatBubbleHtml).join('')}</div>
+    <div class="chat-input-row">
+      <input id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter') submitChatMessage()" />
+      <button class="chat-send-btn" onclick="submitChatMessage()">Send</button>
+    </div>
+    <p style="font-size:11px; color:var(--muted); text-align:center; margin-top:10px;">Chatting as <b>${esc(myProfile?myProfile.name:'')}</b></p>
+  `;
+}
+function scrollChatToBottom(){
+  const list = document.getElementById('chatMessagesList');
+  if(list) list.scrollTop = list.scrollHeight;
+}
+function renderChatMessagesOnly(){
+  const list = document.getElementById('chatMessagesList');
+  if(!list) return;
+  list.innerHTML = data.chatMessages.map(chatBubbleHtml).join('');
+  list.scrollTop = list.scrollHeight;
+}
+window.submitChatMessage = async function(){
+  const input = document.getElementById('chatInput');
+  const content = input.value.trim();
+  if(!content || !myProfile) return;
+  const row = { id:uid(), sender:myProfile.name, sender_id:myProfile.id, content, ts:Date.now() };
+  input.value = '';
+  data.chatMessages.push(row);
+  renderChatMessagesOnly();
+  try{
+    await sbInsert('chat_messages', row);
+  }catch(e){ showToast('Message failed to send — check connection'); }
+}
+window.deleteChatMessage = async function(id){
+  try{
+    await sbDelete('chat_messages', id);
+    data.chatMessages = data.chatMessages.filter(m=>m.id!==id);
+    renderChatMessagesOnly();
+  }catch(e){ showToast('Failed to delete — try again'); }
+}
+
+/* ============ CGPA ============ */
+function gradePoint(grade, scale){
+  const s5 = {A:5,B:4,C:3,D:2,E:1,F:0};
+  const s4 = {A:4,B:3.5,C:2.5,D:1.5,E:1,F:0};
+  const map = scale===5 ? s5 : s4;
+  return map[grade] ?? 0;
+}
+function renderCgpa(){
+  const rows = cgpaCourses.map((c,i)=>`
+    <div class="course-row">
+      <input placeholder="Course e.g. CSC101" value="${escAttr(c.name)}" oninput="updateCourse(${i},'name',this.value)" />
+      <input type="number" min="1" max="9" placeholder="Unit" value="${c.unit||''}" oninput="updateCourse(${i},'unit',this.value)" />
+      <select onchange="updateCourse(${i},'grade',this.value)">
+        <option value="">Grade</option>
+        ${['A','B','C','D','E','F'].map(g=>`<option value="${g}" ${c.grade===g?'selected':''}>${g}</option>`).join('')}
+      </select>
+      <button class="rm-row" onclick="removeCourse(${i})">✕</button>
+    </div>`).join('');
+
+  let totalUnits=0, totalPoints=0;
+  cgpaCourses.forEach(c=>{
+    const u = parseFloat(c.unit)||0;
+    if(c.grade){ totalUnits += u; totalPoints += u*gradePoint(c.grade, cgpaScale); }
+  });
+  const semGpa = totalUnits ? (totalPoints/totalUnits) : 0;
+
+  const prevCgpa = parseFloat(cgpaPrev.prevCgpa)||0;
+  const prevUnits = parseFloat(cgpaPrev.prevUnits)||0;
+  let cumu = null;
+  if(prevUnits>0 && totalUnits>0){
+    cumu = ((prevCgpa*prevUnits) + totalPoints) / (prevUnits+totalUnits);
+  }
+
+  return `
+    <button class="back-link" onclick="goTab('more')">← More</button>
+    <div class="sec-head"><h2>🧮 CGPA Calculator</h2></div>
+    <div class="scale-toggle">
+      <button class="${cgpaScale===5?'active':''}" onclick="setScale(5)">5.0 scale</button>
+      <button class="${cgpaScale===4?'active':''}" onclick="setScale(4)">4.0 scale</button>
+    </div>
+    <div class="card">
+      <label class="f-label" style="margin-bottom:10px">THIS SEMESTER'S COURSES</label>
+      ${rows}
+      <button class="ghost" onclick="addCourseRow()" style="margin-top:6px">+ Add course</button>
+    </div>
+    <div class="gpa-result">
+      <div class="num mono">${semGpa.toFixed(2)}</div>
+      <div class="lbl">Semester GPA (${totalUnits} units)</div>
+    </div>
+
+    <div class="card cumu-box">
+      <label class="f-label" style="margin-bottom:10px">CUMULATIVE CGPA (optional)</label>
+      <div class="two-col">
+        <div class="field"><label class="f-label">Previous CGPA</label><input type="number" step="0.01" value="${escAttr(cgpaPrev.prevCgpa)}" oninput="updatePrev('prevCgpa', this.value)" placeholder="e.g. 4.20" /></div>
+        <div class="field"><label class="f-label">Previous total units</label><input type="number" value="${escAttr(cgpaPrev.prevUnits)}" oninput="updatePrev('prevUnits', this.value)" placeholder="e.g. 32" /></div>
+      </div>
+      ${cumu!==null ? `
+        <div class="gpa-result" style="margin-top:6px">
+          <div class="num mono">${cumu.toFixed(2)}</div>
+          <div class="lbl">New Cumulative CGPA</div>
+        </div>` : `<p style="color:var(--muted); font-size:12.5px; margin:6px 0 0;">Enter your previous CGPA and units to see your updated cumulative CGPA.</p>`}
+    </div>
+  `;
+}
+window.setScale = function(s){ cgpaScale = s; render(); }
+window.addCourseRow = function(){ cgpaCourses.push({name:'',unit:'',grade:''}); saveCgpaCourses(); render(); }
+window.removeCourse = function(i){ cgpaCourses.splice(i,1); saveCgpaCourses(); render(); }
+window.updateCourse = function(i, field, val){
+  cgpaCourses[i][field] = val;
+  saveCgpaCourses();
+  render();
+}
+window.updatePrev = function(field, val){
+  cgpaPrev[field] = val;
+  saveCgpaPrev();
+  render();
+}
+
+/* ============ UTIL ============ */
+function esc(s){ return (s||'').toString().replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escAttr(s){ return esc(s); }
+
+/* ============ EVENTS ============ */
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{ activeTab = btn.dataset.tab; render(); });
+});
+document.getElementById('accountBtn').addEventListener('click', ()=>{
+  if(myProfile) openAccountMenu();
+});
+document.getElementById('notifBtn').addEventListener('click', toggleNotifications);
+document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+
+async function initAuth(){
+  if(!sbClient){ lockApp(); return; }
+  try{
+    const { data: sessionData } = await sbClient.auth.getSession();
+    if(sessionData && sessionData.session){
+      await handleAuthedSession(sessionData.session);
+    } else {
+      lockApp();
+    }
+  }catch(e){ lockApp(); }
+  sbClient.auth.onAuthStateChange((event, session)=>{
+    if(event === 'SIGNED_OUT'){ currentAccessToken=null; myProfile=null; isAdmin=false; lockApp(); return; }
+    if(event === 'TOKEN_REFRESHED' && session){ currentAccessToken = session.access_token; }
+  });
+}
+
+initAuth();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{ /* fine if unavailable */ });
+  });
+}
+
+</script>
+</body>
+</html>
