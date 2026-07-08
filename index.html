@@ -264,6 +264,72 @@ input:focus, select:focus, textarea:focus{outline:2px solid var(--teal); outline
   position:absolute; bottom:22px; left:50%; transform:translateX(-50%);
   font-size:11.5px; color:var(--muted); background:#00000088; padding:6px 14px; border-radius:20px;
 }
+
+/* AUTH GATE */
+body.locked header, body.locked main, body.locked nav.tabs{ display:none; }
+.auth-overlay{
+  position:fixed; inset:0; z-index:1000; background:var(--bg);
+  display:flex; align-items:center; justify-content:center; padding:20px;
+  overflow-y:auto;
+}
+.auth-card{
+  width:100%; max-width:400px; background:var(--bg-elev); border:1px solid var(--line);
+  border-radius:24px; overflow:hidden; margin:auto;
+}
+.auth-hero{
+  background:linear-gradient(135deg, var(--purple), var(--yellow));
+  padding:28px 24px 22px;
+}
+.auth-hero h2{ margin:0 0 6px; font-family:'Space Mono',monospace; font-size:20px; color:#0A0A0F; }
+.auth-hero p{ margin:0; font-size:12.5px; color:#0A0A0Fcc; }
+.auth-tabs{ display:flex; gap:8px; padding:18px 20px 0; }
+.auth-tab{
+  flex:1; padding:10px; border-radius:12px; border:1px solid var(--line); background:var(--bg-elev-2);
+  color:var(--muted); font-weight:700; font-size:13.5px; cursor:pointer;
+}
+.auth-tab.active{ background:var(--yellow); color:#0A0A0F; border-color:var(--yellow); }
+.auth-body{ padding:18px 20px 22px; }
+.auth-row{ display:flex; gap:10px; }
+.auth-row .field{ flex:1; }
+.auth-error{ color:var(--red); font-size:12.5px; margin:-4px 0 10px; min-height:1px; }
+.auth-forgot{ text-align:right; margin:-8px 0 14px; }
+.auth-forgot a{ color:var(--teal); font-size:12px; text-decoration:none; cursor:pointer; }
+.auth-switch{ text-align:center; margin-top:14px; font-size:12.5px; color:var(--muted); }
+.auth-switch a{ color:var(--yellow); font-weight:700; text-decoration:none; cursor:pointer; }
+
+/* ACCOUNT MENU */
+.account-name{ font-weight:700; font-size:14px; margin:0 0 2px; }
+.account-email{ font-size:12px; color:var(--muted); margin:0 0 16px; }
+.account-badge{
+  display:inline-block; font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:20px;
+  background:var(--yellow)22; color:var(--yellow); margin-bottom:14px;
+}
+
+/* CHAT */
+.chat-messages{
+  max-height:58vh; overflow-y:auto; display:flex; flex-direction:column; gap:10px;
+  padding:6px 4px 10px; margin-bottom:10px;
+}
+.chat-bubble{
+  max-width:78%; padding:9px 13px; border-radius:14px; font-size:13.5px; line-height:1.4;
+  position:relative; word-break:break-word;
+}
+.chat-bubble.mine{ align-self:flex-end; background:var(--yellow); color:#000000; border-bottom-right-radius:4px; }
+.chat-bubble.theirs{ align-self:flex-start; background:var(--bg-elev-2); border:1px solid var(--line); border-bottom-left-radius:4px; }
+.chat-sender{ font-size:11px; color:var(--muted); margin:0 0 3px 3px; }
+.chat-time{ font-size:10px; opacity:.6; margin-top:3px; display:block; }
+.chat-del{
+  position:absolute; top:-7px; right:-7px; background:var(--red); color:#fff; border:none;
+  width:19px; height:19px; border-radius:50%; font-size:11px; cursor:pointer; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+}
+.chat-input-row{ display:flex; gap:8px; }
+.chat-input-row input{ flex:1; }
+.chat-send-btn{
+  background:var(--yellow); color:#000000; border:none; border-radius:10px; padding:0 18px;
+  font-weight:700; cursor:pointer; font-size:14px;
+}
+.chat-name-setup{ text-align:center; padding:26px 14px; }
 .cumu-box{margin-top:18px; padding-top:16px; border-top:1px dashed var(--line);}
 .two-col{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
 label.f-label{font-size:11.5px; color:var(--muted); display:block; margin:0 0 5px;}
@@ -322,7 +388,9 @@ button:focus-visible, a:focus-visible{ outline:2px solid var(--teal); outline-of
 }
 </style>
 </head>
-<body>
+<body class="locked">
+
+<div id="authGate"></div>
 
 <header class="top">
   <div class="brand">
@@ -333,7 +401,7 @@ button:focus-visible, a:focus-visible{ outline:2px solid var(--teal); outline-of
   <div class="header-btns">
     <button class="admin-btn" id="themeBtn" title="Toggle ash / black theme">⚫</button>
     <button class="admin-btn" id="notifBtn" title="Deadline reminders">🔔</button>
-    <button class="admin-btn" id="adminBtn" title="Admin">🔒</button>
+    <button class="admin-btn" id="accountBtn" title="Account">👤</button>
   </div>
 </header>
 
@@ -351,14 +419,15 @@ button:focus-visible, a:focus-visible{ outline:2px solid var(--teal); outline-of
 <div id="lightboxRoot"></div>
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 /* ============ STATE ============ */
 let isAdmin = false;
+let currentAccessToken = null;
 let activeTab = 'today';
 let activeDay = currentDayName();
 let cgpaScale = 5;
 
-const DEFAULT_PASSCODE = 'csc100reps';
 let data = {
   announcements: [],
   assignments: [],
@@ -371,7 +440,8 @@ let data = {
   suggestions: [],
   syllabus: [],
   exams: [],
-  passcode: DEFAULT_PASSCODE,
+  comments: [],
+  chatMessages: [],
   semesterStart: null,
   semesterEnd: null
 };
@@ -386,11 +456,6 @@ let isLoading = true;
 let editing = { announcement:null, assignment:null, slot:null, material:null, faq:null };
 let searchBoard = '';
 let searchAssignments = '';
-let voterId = null;
-try{
-  voterId = localStorage.getItem('voter-id');
-  if(!voterId){ voterId = 'v_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36); localStorage.setItem('voter-id', voterId); }
-}catch(e){ voterId = 'v_' + Math.random().toString(36).slice(2,10); }
 
 const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const COLORS = ['#A855F7','#22D3C0','#F472B6','#FBBF24','#818CF8','#4ADE80'];
@@ -415,21 +480,30 @@ function showToast(msg){
 /* ============ SUPABASE ============ */
 const SB_URL = 'https://vfbdcosmwaidlqnrgkce.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmYmRjb3Ntd2FpZGxxbnJna2NlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwMjI2MTQsImV4cCI6MjA5ODU5ODYxNH0.QrGg9ReEp-eXrWN9FGUFF43k3_lW3fMKIONisDugbK4';
-const SB_HEADERS = {
-  'apikey': SB_KEY,
-  'Authorization': `Bearer ${SB_KEY}`,
-  'Content-Type': 'application/json'
-};
+let sbClient = null;
+try{ sbClient = window.supabase.createClient(SB_URL, SB_KEY); }catch(e){ /* realtime unavailable, chat falls back to manual refresh */ }
+
+// Requests now carry the logged-in rep's own access token when available, so
+// the database (not just the UI) enforces who can write. Anonymous visitors
+// still use the public anon key, which only has the permissions RLS grants it.
+function authHeaders(extra){
+  return {
+    'apikey': SB_KEY,
+    'Authorization': `Bearer ${currentAccessToken || SB_KEY}`,
+    'Content-Type': 'application/json',
+    ...(extra||{})
+  };
+}
 async function sbSelect(table, order){
   const url = `${SB_URL}/rest/v1/${table}?select=*${order?`&order=${order}`:''}`;
-  const res = await fetch(url, { headers: SB_HEADERS });
+  const res = await fetch(url, { headers: authHeaders() });
   if(!res.ok) throw new Error('select failed: '+table);
   return await res.json();
 }
 async function sbInsert(table, row){
   const res = await fetch(`${SB_URL}/rest/v1/${table}`, {
     method:'POST',
-    headers:{...SB_HEADERS, 'Prefer':'return=representation'},
+    headers: authHeaders({'Prefer':'return=representation'}),
     body: JSON.stringify(row)
   });
   if(!res.ok) throw new Error('insert failed: '+table);
@@ -438,7 +512,7 @@ async function sbInsert(table, row){
 async function sbUpdate(table, id, patch){
   const res = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
     method:'PATCH',
-    headers:{...SB_HEADERS, 'Prefer':'return=representation'},
+    headers: authHeaders({'Prefer':'return=representation'}),
     body: JSON.stringify(patch)
   });
   if(!res.ok) throw new Error('update failed: '+table);
@@ -447,7 +521,7 @@ async function sbUpdate(table, id, patch){
 async function sbUpsertSetting(key, value){
   const res = await fetch(`${SB_URL}/rest/v1/settings`, {
     method:'POST',
-    headers:{...SB_HEADERS, 'Prefer':'resolution=merge-duplicates,return=representation'},
+    headers: authHeaders({'Prefer':'resolution=merge-duplicates,return=representation'}),
     body: JSON.stringify({ key, value })
   });
   if(!res.ok) throw new Error('setting upsert failed');
@@ -456,7 +530,7 @@ async function sbUpsertSetting(key, value){
 async function sbDelete(table, id){
   const res = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
     method:'DELETE',
-    headers: SB_HEADERS
+    headers: authHeaders()
   });
   if(!res.ok) throw new Error('delete failed: '+table);
 }
@@ -466,11 +540,7 @@ async function uploadImage(file){
   const path = `${Date.now()}-${uid()}.${ext}`;
   const res = await fetch(`${SB_URL}/storage/v1/object/portal-images/${path}`, {
     method:'POST',
-    headers:{
-      'apikey': SB_KEY,
-      'Authorization': `Bearer ${SB_KEY}`,
-      'Content-Type': file.type || 'application/octet-stream'
-    },
+    headers: authHeaders({ 'Content-Type': file.type || 'application/octet-stream' }),
     body: file
   });
   if(!res.ok) throw new Error('image upload failed');
@@ -542,10 +612,9 @@ async function loadAll(){
     const rows = await sbSelect('settings');
     const map = {};
     rows.forEach(r=> map[r.key] = r.value);
-    data.passcode = map.admin_passcode || DEFAULT_PASSCODE;
     data.semesterStart = map.semester_start || null;
     data.semesterEnd = map.semester_end || null;
-  }catch(e){ data.passcode = DEFAULT_PASSCODE; }
+  }catch(e){ /* settings unavailable, semester progress card just won't show */ }
 
   try{
     const rows = await sbSelect('directory','ts.desc');
@@ -567,6 +636,16 @@ async function loadAll(){
     data.exams = rows.map(r=>({ id:r.id, code:r.code, title:r.title, date:r.exam_date, venue:r.venue||'' }));
   }catch(e){ data.exams = []; }
 
+  try{
+    const rows = await sbSelect('comments','ts.desc');
+    data.comments = rows.map(r=>({ id:r.id, name:r.name, content:r.content, ts:Number(r.ts) }));
+  }catch(e){ data.comments = []; }
+
+  try{
+    const rows = await sbSelect('chat_messages','ts.asc');
+    data.chatMessages = rows.map(r=>({ id:r.id, sender:r.sender, sender_id:r.sender_id, content:r.content, ts:Number(r.ts) }));
+  }catch(e){ data.chatMessages = []; }
+
   try{ completedAssignments = JSON.parse(localStorage.getItem('completed-assignments') || '{}'); }catch(e){ completedAssignments = {}; }
 
   // CGPA is personal, so it stays on this device only (this is a real website, so localStorage is fine here)
@@ -576,6 +655,30 @@ async function loadAll(){
   isLoading = false;
   render();
   checkDeadlineReminders();
+  subscribeChat();
+}
+let chatSubscribed = false;
+function subscribeChat(){
+  if(!sbClient || chatSubscribed) return;
+  chatSubscribed = true;
+  try{
+    sbClient.channel('chat-room-v1')
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'chat_messages' }, payload=>{
+        const r = payload.new;
+        if(!data.chatMessages.find(m=>m.id===r.id)){
+          data.chatMessages.push({ id:r.id, sender:r.sender, sender_id:r.sender_id, content:r.content, ts:Number(r.ts) });
+          if(activeTab==='chat') renderChatMessagesOnly();
+        }
+      })
+      .on('postgres_changes', { event:'DELETE', schema:'public', table:'chat_messages' }, payload=>{
+        const oldId = payload.old && payload.old.id;
+        if(oldId){
+          data.chatMessages = data.chatMessages.filter(m=>m.id!==oldId);
+          if(activeTab==='chat') renderChatMessagesOnly();
+        }
+      })
+      .subscribe();
+  }catch(e){ /* realtime unavailable; chat still works, just won't update live for others */ }
 }
 function saveCgpaCourses(){ try{ localStorage.setItem('cgpa-courses', JSON.stringify(cgpaCourses)); }catch(e){} }
 function saveCgpaPrev(){ try{ localStorage.setItem('cgpa-prev', JSON.stringify(cgpaPrev)); }catch(e){} }
@@ -705,36 +808,159 @@ function openModal(html){
 }
 function closeModal(){ document.getElementById('modalRoot').innerHTML = ''; }
 
-function promptAdmin(){
-  openModal(`
-    <div class="modal-head"><h3>🔒 Admin Login</h3><button class="close-x" onclick="closeModal()">×</button></div>
-    <div class="field">
-      <label class="f-label">PASSCODE</label>
-      <input type="password" id="pcInput" placeholder="Enter admin passcode" autofocus />
-    </div>
-    <button class="primary" onclick="tryAdminLogin()">Unlock</button>
-  `);
+/* ============ AUTH GATE ============ */
+let authMode = 'signin';
+let myProfile = null; // { id, name, isAdmin }
+
+function lockApp(){
+  document.body.classList.add('locked');
+  renderAuthGate();
 }
-window.tryAdminLogin = function(){
-  const val = document.getElementById('pcInput').value;
-  if(val === data.passcode){
-    isAdmin = true; closeModal(); showToast('Admin unlocked ✓'); render();
+function unlockApp(){
+  document.body.classList.remove('locked');
+  document.getElementById('authGate').innerHTML = '';
+}
+window.setAuthMode = function(mode){ authMode = mode; renderAuthGate(); }
+
+function renderAuthGate(){
+  const root = document.getElementById('authGate');
+  const isSignup = authMode === 'signup';
+  root.innerHTML = `
+    <div class="auth-overlay">
+      <div class="auth-card">
+        <div class="auth-hero">
+          <h2>${isSignup ? 'Join Vortex.io' : 'Welcome Back'}</h2>
+          <p>${isSignup ? 'Create your account to access announcements, timetable, chat and more.' : 'Sign in to access your class portal.'}</p>
+        </div>
+        <div class="auth-tabs">
+          <button class="auth-tab ${!isSignup?'active':''}" onclick="setAuthMode('signin')">Sign In</button>
+          <button class="auth-tab ${isSignup?'active':''}" onclick="setAuthMode('signup')">Sign Up</button>
+        </div>
+        <div class="auth-body">
+          <div class="auth-error" id="authError"></div>
+          ${isSignup ? `
+            <div class="auth-row">
+              <div class="field"><label class="f-label">FIRST NAME</label><input id="authFirstName" placeholder="Tolu" /></div>
+              <div class="field"><label class="f-label">LAST NAME</label><input id="authLastName" placeholder="Adebayo" /></div>
+            </div>
+          `:''}
+          <div class="field"><label class="f-label">EMAIL</label><input type="email" id="authEmail" placeholder="you@example.com" autocomplete="email" /></div>
+          <div class="field"><label class="f-label">PASSWORD</label><input type="password" id="authPassword" placeholder="At least 6 characters" autocomplete="${isSignup?'new-password':'current-password'}" /></div>
+          ${isSignup ? `<div class="field"><label class="f-label">CONFIRM PASSWORD</label><input type="password" id="authPasswordConfirm" placeholder="Re-enter password" /></div>` : `<div class="auth-forgot"><a onclick="submitForgotPassword()">Forgot password?</a></div>`}
+          <button class="primary" id="authSubmitBtn" onclick="${isSignup?'submitSignUp()':'submitSignIn()'}">${isSignup?'Sign Up':'Sign In'}</button>
+          <div class="auth-switch">
+            ${isSignup ? `Already have an account? <a onclick="setAuthMode('signin')">Sign in</a>` : `New here? <a onclick="setAuthMode('signup')">Create an account</a>`}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+function authErr(msg){ const el = document.getElementById('authError'); if(el) el.textContent = msg || ''; }
+function setAuthBusy(busy, label){
+  const btn = document.getElementById('authSubmitBtn');
+  if(!btn) return;
+  btn.disabled = busy;
+  if(busy) btn.textContent = label;
+}
+window.submitSignIn = async function(){
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  authErr('');
+  if(!email || !password){ authErr('Enter your email and password'); return; }
+  if(!sbClient){ authErr('Login unavailable right now — try reloading'); return; }
+  setAuthBusy(true, 'Signing in…');
+  const { data: authData, error } = await sbClient.auth.signInWithPassword({ email, password });
+  if(error){ authErr(error.message || 'Login failed'); setAuthBusy(false); document.getElementById('authSubmitBtn').textContent='Sign In'; return; }
+  await handleAuthedSession(authData.session);
+}
+window.submitSignUp = async function(){
+  const firstName = document.getElementById('authFirstName').value.trim();
+  const lastName = document.getElementById('authLastName').value.trim();
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const confirm = document.getElementById('authPasswordConfirm').value;
+  authErr('');
+  if(!firstName || !email || !password){ authErr('Fill in your name, email and password'); return; }
+  if(password.length < 6){ authErr('Password must be at least 6 characters'); return; }
+  if(password !== confirm){ authErr('Passwords do not match'); return; }
+  if(!sbClient){ authErr('Sign up unavailable right now — try reloading'); return; }
+  setAuthBusy(true, 'Creating account…');
+  const { data: authData, error } = await sbClient.auth.signUp({ email, password });
+  if(error){ authErr(error.message || 'Sign up failed'); setAuthBusy(false); document.getElementById('authSubmitBtn').textContent='Sign Up'; return; }
+  const fullName = lastName ? `${firstName} ${lastName}` : firstName;
+  if(authData.session && authData.user){
+    try{ await sbInsertProfile(authData.user.id, fullName); }catch(e){}
+    await handleAuthedSession(authData.session, fullName);
   } else {
-    showToast('Wrong passcode');
+    authErr('');
+    showToast('Account created — check your email to confirm, then sign in.');
+    authMode = 'signin'; renderAuthGate();
   }
 }
-window.logoutAdmin = function(){ isAdmin = false; render(); }
+window.submitForgotPassword = async function(){
+  const email = document.getElementById('authEmail').value.trim();
+  if(!email){ authErr('Enter your email above first'); return; }
+  if(!sbClient){ authErr('Unavailable right now — try reloading'); return; }
+  try{
+    await sbClient.auth.resetPasswordForEmail(email);
+    showToast('Check your email for a reset link');
+  }catch(e){ authErr('Could not send reset email'); }
+}
+async function sbInsertProfile(userId, name){
+  await fetch(`${SB_URL}/rest/v1/profiles`, {
+    method:'POST',
+    headers: authHeaders({'Prefer':'return=representation'}),
+    body: JSON.stringify({ id:userId, name, is_admin:false })
+  });
+}
+async function fetchProfile(userId){
+  const res = await fetch(`${SB_URL}/rest/v1/profiles?id=eq.${userId}&select=*`, { headers: authHeaders() });
+  if(!res.ok) return null;
+  const rows = await res.json();
+  return rows[0] || null;
+}
+async function handleAuthedSession(session, fallbackName){
+  currentAccessToken = session ? session.access_token : null;
+  if(!currentAccessToken){ lockApp(); return; }
+  let profile = await fetchProfile(session.user.id);
+  if(!profile){
+    const name = fallbackName || (session.user.email ? session.user.email.split('@')[0] : 'Student');
+    try{ await sbInsertProfile(session.user.id, name); }catch(e){}
+    profile = { id: session.user.id, name, is_admin:false };
+  }
+  myProfile = { id: profile.id, name: profile.name, email: session.user.email, isAdmin: !!profile.is_admin };
+  isAdmin = myProfile.isAdmin;
+  unlockApp();
+  isLoading = true; render();
+  await loadAll();
+}
+window.openAccountMenu = function(){
+  if(!myProfile) return;
+  openModal(`
+    <div class="modal-head"><h3>Account</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <p class="account-name">${esc(myProfile.name)}</p>
+    <p class="account-email">${esc(myProfile.email||'')}</p>
+    ${myProfile.isAdmin?`<span class="account-badge">⭐ Course Rep / Admin</span>`:''}
+    <button class="ghost" onclick="signOutUser()">Sign out</button>
+  `);
+}
+window.signOutUser = async function(){
+  if(sbClient){ try{ await sbClient.auth.signOut(); }catch(e){} }
+  currentAccessToken = null; myProfile = null; isAdmin = false;
+  closeModal();
+  lockApp();
+}
 
 /* ============ RENDER: ROOT ============ */
 function render(){
-  const NAV_MAP = { today:'today', board:'board', assignments:'assignments', timetable:'timetable', more:['more','materials','cgpa','faq','polls','directory','suggestions','syllabus','exams'] };
+  const NAV_MAP = { today:'today', board:'board', assignments:'assignments', timetable:'timetable', more:['more','materials','cgpa','faq','polls','directory','suggestions','syllabus','exams','comments','chat'] };
   document.querySelectorAll('nav.tabs button').forEach(b=>{
     const target = NAV_MAP[b.dataset.tab];
     const isActive = Array.isArray(target) ? target.includes(activeTab) : target === activeTab;
     b.classList.toggle('active', isActive);
   });
-  document.getElementById('adminBtn').textContent = isAdmin ? '🔓' : '🔒';
-  document.getElementById('adminBtn').classList.toggle('on', isAdmin);
+  document.getElementById('accountBtn').textContent = isAdmin ? '⭐' : '👤';
+  document.getElementById('accountBtn').classList.toggle('on', isAdmin);
   const notifOn = ('Notification' in window) && Notification.permission === 'granted';
   document.getElementById('notifBtn').classList.toggle('notif-on', notifOn);
   const isLight = document.documentElement.classList.contains('light-theme');
@@ -753,6 +979,8 @@ function render(){
   else if(activeTab==='suggestions') main.innerHTML = renderSuggestions();
   else if(activeTab==='syllabus') main.innerHTML = renderSyllabus();
   else if(activeTab==='exams') main.innerHTML = renderExams();
+  else if(activeTab==='comments') main.innerHTML = renderComments();
+  else if(activeTab==='chat'){ main.innerHTML = renderChat(); scrollChatToBottom(); }
   else if(activeTab==='cgpa') main.innerHTML = renderCgpa();
   else if(activeTab==='more') main.innerHTML = renderMore();
 }
@@ -789,6 +1017,8 @@ function renderMore(){
     { tab:'suggestions', icon:'💬', label:'Suggestion Box', desc:'Anonymous feedback to reps' },
     { tab:'syllabus', icon:'📖', label:'Syllabus Tracker', desc:"What's been covered so far" },
     { tab:'exams', icon:'🎯', label:'Exam Countdown', desc:'Upcoming tests & exams per course' },
+    { tab:'comments', icon:'💡', label:'Ideas & Comments', desc:'Share ideas with the class' },
+    { tab:'chat', icon:'💬', label:'Live Chat', desc:'Real-time class chat room' },
   ];
   return `
     <div class="sec-head"><h2>⋯ More</h2></div>
@@ -1392,7 +1622,7 @@ function votesForPoll(pollId){
   return data.pollVotes.filter(v=>v.poll_id===pollId);
 }
 function myVoteForPoll(pollId){
-  return data.pollVotes.find(v=>v.poll_id===pollId && v.voter_id===voterId);
+  return data.pollVotes.find(v=>v.poll_id===pollId && v.voter_id===(myProfile?myProfile.id:null));
 }
 function renderPolls(){
   const items = data.polls.slice().sort((a,b)=> b.ts - a.ts);
@@ -1454,7 +1684,7 @@ window.submitVote = async function(pollId, optionIndex){
   if(myVoteForPoll(pollId)){ showToast('You already voted'); return; }
   const poll = data.polls.find(p=>p.id===pollId);
   if(!poll || !poll.active){ showToast('This poll is closed'); return; }
-  const row = { id:uid(), poll_id:pollId, option_index:optionIndex, voter_id:voterId, ts:Date.now() };
+  const row = { id:uid(), poll_id:pollId, option_index:optionIndex, voter_id: myProfile?myProfile.id:uid(), ts:Date.now() };
   try{
     await sbInsert('poll_votes', row);
     data.pollVotes.push(row);
@@ -1502,7 +1732,7 @@ function renderDirectory(){
 window.openDirectoryForm = function(){
   openModal(`
     <div class="modal-head"><h3>Add Yourself</h3><button class="close-x" onclick="closeModal()">×</button></div>
-    <div class="field"><label class="f-label">NAME</label><input id="dirName" placeholder="e.g. Tolu Adebayo" /></div>
+    <div class="field"><label class="f-label">NAME</label><input id="dirName" placeholder="e.g. Tolu Adebayo" value="${myProfile?escAttr(myProfile.name):''}" /></div>
     <div class="field"><label class="f-label">SKILLS / INTERESTS (optional)</label><input id="dirSkills" placeholder="e.g. Python, UI design, good at maths" /></div>
     <div class="field"><label class="f-label">CONTACT (optional)</label><input id="dirContact" placeholder="e.g. WhatsApp number or @handle" /></div>
     <button class="primary" onclick="submitDirectory()">Add me to the directory</button>
@@ -1709,106 +1939,87 @@ window.deleteExam = async function(id){
   }catch(e){ showToast('Failed to delete — try again'); }
 }
 
-/* ============ CGPA ============ */
-function gradePoint(grade, scale){
-  const s5 = {A:5,B:4,C:3,D:2,E:1,F:0};
-  const s4 = {A:4,B:3.5,C:2.5,D:1.5,E:1,F:0};
-  const map = scale===5 ? s5 : s4;
-  return map[grade] ?? 0;
-}
-function renderCgpa(){
-  const rows = cgpaCourses.map((c,i)=>`
-    <div class="course-row">
-      <input placeholder="Course e.g. CSC101" value="${escAttr(c.name)}" oninput="updateCourse(${i},'name',this.value)" />
-      <input type="number" min="1" max="9" placeholder="Unit" value="${c.unit||''}" oninput="updateCourse(${i},'unit',this.value)" />
-      <select onchange="updateCourse(${i},'grade',this.value)">
-        <option value="">Grade</option>
-        ${['A','B','C','D','E','F'].map(g=>`<option value="${g}" ${c.grade===g?'selected':''}>${g}</option>`).join('')}
-      </select>
-      <button class="rm-row" onclick="removeCourse(${i})">✕</button>
-    </div>`).join('');
-
-  let totalUnits=0, totalPoints=0;
-  cgpaCourses.forEach(c=>{
-    const u = parseFloat(c.unit)||0;
-    if(c.grade){ totalUnits += u; totalPoints += u*gradePoint(c.grade, cgpaScale); }
-  });
-  const semGpa = totalUnits ? (totalPoints/totalUnits) : 0;
-
-  const prevCgpa = parseFloat(cgpaPrev.prevCgpa)||0;
-  const prevUnits = parseFloat(cgpaPrev.prevUnits)||0;
-  let cumu = null;
-  if(prevUnits>0 && totalUnits>0){
-    cumu = ((prevCgpa*prevUnits) + totalPoints) / (prevUnits+totalUnits);
-  }
+/* ============ IDEAS & COMMENTS BOARD ============ */
+window.editingComment = null;
+function renderComments(){
+  const items = data.comments.slice().sort((a,b)=> b.ts - a.ts);
+  const list = items.length ? items.map(c=>`
+    <div class="card">
+      <p class="ann-title" style="font-size:14px;">${esc(c.name || 'Anonymous')}</p>
+      <p class="ann-body">${esc(c.content)}</p>
+      <div class="ann-foot">
+        <span>${new Date(c.ts).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span>
+        ${isAdmin?`<span><button class="del-btn" style="color:var(--teal)" onclick="openCommentEditForm('${c.id}')">Edit</button> <button class="del-btn" onclick="deleteComment('${c.id}')">Delete</button></span>`:''}
+      </div>
+    </div>`).join('') : `<div class="empty">No ideas shared yet — be the first!</div>`;
 
   return `
     <button class="back-link" onclick="goTab('more')">← More</button>
-    <div class="sec-head"><h2>🧮 CGPA Calculator</h2></div>
-    <div class="scale-toggle">
-      <button class="${cgpaScale===5?'active':''}" onclick="setScale(5)">5.0 scale</button>
-      <button class="${cgpaScale===4?'active':''}" onclick="setScale(4)">4.0 scale</button>
-    </div>
+    <div class="sec-head"><h2>💡 Ideas & Comments</h2></div>
     <div class="card">
-      <label class="f-label" style="margin-bottom:10px">THIS SEMESTER'S COURSES</label>
-      ${rows}
-      <button class="ghost" onclick="addCourseRow()" style="margin-top:6px">+ Add course</button>
+      <label class="f-label" style="margin-bottom:8px;">SHARE AN IDEA OR SUGGESTION</label>
+      <textarea id="commentContent" placeholder="What's on your mind? Ideas for the class, portal feedback, anything..."></textarea>
+      <button class="primary" style="margin-top:10px;" onclick="submitComment()">Post as ${esc(myProfile?myProfile.name:'you')}</button>
     </div>
-    <div class="gpa-result">
-      <div class="num mono">${semGpa.toFixed(2)}</div>
-      <div class="lbl">Semester GPA (${totalUnits} units)</div>
-    </div>
-
-    <div class="card cumu-box">
-      <label class="f-label" style="margin-bottom:10px">CUMULATIVE CGPA (optional)</label>
-      <div class="two-col">
-        <div class="field"><label class="f-label">Previous CGPA</label><input type="number" step="0.01" value="${escAttr(cgpaPrev.prevCgpa)}" oninput="updatePrev('prevCgpa', this.value)" placeholder="e.g. 4.20" /></div>
-        <div class="field"><label class="f-label">Previous total units</label><input type="number" value="${escAttr(cgpaPrev.prevUnits)}" oninput="updatePrev('prevUnits', this.value)" placeholder="e.g. 32" /></div>
-      </div>
-      ${cumu!==null ? `
-        <div class="gpa-result" style="margin-top:6px">
-          <div class="num mono">${cumu.toFixed(2)}</div>
-          <div class="lbl">New Cumulative CGPA</div>
-        </div>` : `<p style="color:var(--muted); font-size:12.5px; margin:6px 0 0;">Enter your previous CGPA and units to see your updated cumulative CGPA.</p>`}
-    </div>
+    <p style="font-size:12px; color:var(--muted); text-align:center; margin:-4px 0 14px;">Visible to your whole class. Reps can remove anything inappropriate.</p>
+    ${list}
   `;
 }
-window.setScale = function(s){ cgpaScale = s; render(); }
-window.addCourseRow = function(){ cgpaCourses.push({name:'',unit:'',grade:''}); saveCgpaCourses(); render(); }
-window.removeCourse = function(i){ cgpaCourses.splice(i,1); saveCgpaCourses(); render(); }
-window.updateCourse = function(i, field, val){
-  cgpaCourses[i][field] = val;
-  saveCgpaCourses();
-  render();
+window.submitComment = async function(){
+  const content = document.getElementById('commentContent').value.trim();
+  if(!content){ showToast('Write something first'); return; }
+  const row = { id:uid(), name: myProfile?myProfile.name:'Student', content, ts: Date.now() };
+  try{
+    await sbInsert('comments', row);
+    data.comments.push(row);
+    document.getElementById('commentContent').value = '';
+    showToast('Posted ✓'); render();
+  }catch(e){ showToast('Failed to post — check connection'); }
 }
-window.updatePrev = function(field, val){
-  cgpaPrev[field] = val;
-  saveCgpaPrev();
-  render();
+window.openCommentEditForm = function(id){
+  editingComment = id;
+  const existing = data.comments.find(c=>c.id===id);
+  if(!existing) return;
+  openModal(`
+    <div class="modal-head"><h3>Edit Comment</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <div class="field"><label class="f-label">NAME</label><input id="editCommentName" value="${escAttr(existing.name||'')}" /></div>
+    <div class="field"><label class="f-label">COMMENT</label><textarea id="editCommentContent">${esc(existing.content)}</textarea></div>
+    <button class="primary" onclick="submitCommentEdit()">Save changes</button>
+  `);
+}
+window.submitCommentEdit = async function(){
+  const name = document.getElementById('editCommentName').value.trim() || 'Anonymous';
+  const content = document.getElementById('editCommentContent').value.trim();
+  if(!content){ showToast('Comment cannot be empty'); return; }
+  try{
+    await sbUpdate('comments', editingComment, { name, content });
+    const item = data.comments.find(c=>c.id===editingComment);
+    if(item){ item.name=name; item.content=content; }
+    editingComment = null;
+    closeModal(); showToast('Updated ✓'); render();
+  }catch(e){ showToast('Failed to save — check connection'); }
+}
+window.deleteComment = async function(id){
+  try{
+    await sbDelete('comments', id);
+    data.comments = data.comments.filter(c=>c.id!==id);
+    render();
+  }catch(e){ showToast('Failed to delete — try again'); }
 }
 
-/* ============ UTIL ============ */
-function esc(s){ return (s||'').toString().replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-function escAttr(s){ return esc(s); }
-
-/* ============ EVENTS ============ */
-document.querySelectorAll('nav.tabs button').forEach(btn=>{
-  btn.addEventListener('click', ()=>{ activeTab = btn.dataset.tab; render(); });
-});
-document.getElementById('adminBtn').addEventListener('click', ()=>{
-  if(isAdmin){ logoutAdmin(); } else { promptAdmin(); }
-});
-document.getElementById('notifBtn').addEventListener('click', toggleNotifications);
-document.getElementById('themeBtn').addEventListener('click', toggleTheme);
-
-loadAll();
-
-if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('/sw.js').catch(()=>{ /* fine if unavailable */ });
-  });
+/* ============ LIVE CHAT ============ */
+function chatBubbleHtml(m){
+  const mine = myProfile && m.sender_id === myProfile.id;
+  const time = new Date(m.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  return `
+    <div>
+      ${!mine?`<div class="chat-sender">${esc(m.sender||'Student')}</div>`:''}
+      <div class="chat-bubble ${mine?'mine':'theirs'}">
+        ${esc(m.content)}
+        <span class="chat-time">${time}</span>
+        ${isAdmin?`<button class="chat-del" onclick="deleteChatMessage('${m.id}')" title="Delete">×</button>`:''}
+      </div>
+    </div>`;
 }
-
-</script>
-</body>
-</html>
+function renderChat(){
+  return
