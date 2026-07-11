@@ -1,6 +1,5 @@
 // Supabase Edge Function: send-push
-// Deploy this via Supabase Dashboard → Edge Functions → Deploy a new function → Via Editor
-// Name it exactly: send-push
+// Deploy via Supabase Dashboard → Edge Functions → your "send-push" function → replace with this code → Deploy
 
 import webpush from "npm:web-push@3.6.7";
 
@@ -11,12 +10,32 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 webpush.setVapidDetails("mailto:admin@example.com", VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
+function buildNotification(table: string, record: any) {
+  if (table === "assignments") {
+    return {
+      title: "📝 New assignment",
+      body: `${record.code} — ${record.title} (due ${record.due})`,
+    };
+  }
+  if (table === "exams") {
+    return {
+      title: "🎯 New exam scheduled",
+      body: `${record.code} — ${record.title} on ${record.exam_date}`,
+    };
+  }
+  // default: announcements
+  return {
+    title: "📣 New announcement",
+    body: record.title || "Check the Vortex.io board",
+  };
+}
+
 Deno.serve(async (req) => {
   try {
     const payload = await req.json();
+    const table = payload.table || "announcements";
     const record = payload.record || {};
-    const title = "📣 New announcement";
-    const body = record.title || "Check the Vortex.io board";
+    const { title, body } = buildNotification(table, record);
 
     const res = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?select=*`, {
       headers: {
@@ -37,7 +56,6 @@ Deno.serve(async (req) => {
         await webpush.sendNotification(subscription, notifPayload);
         sent++;
       } catch (err: any) {
-        // subscription expired or invalid — clean it up
         if (err.statusCode === 404 || err.statusCode === 410) {
           await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?id=eq.${s.id}`, {
             method: "DELETE",
@@ -50,7 +68,7 @@ Deno.serve(async (req) => {
       }
     }));
 
-    return new Response(JSON.stringify({ sent, total: subs.length }), {
+    return new Response(JSON.stringify({ sent, total: subs.length, table }), {
       headers: { "Content-Type": "application/json" },
     });
   } catch (e) {
