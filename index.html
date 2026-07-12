@@ -470,6 +470,9 @@ let data = {
   syllabus: [],
   exams: [],
   comments: [],
+  quizzes: [],
+  quizQuestions: [],
+  studyGuides: [],
   chatMessages: [],
   semesterStart: null,
   semesterEnd: null
@@ -555,6 +558,72 @@ async function sbUpsertSetting(key, value){
   });
   if(!res.ok) throw new Error('setting upsert failed');
   return await res.json();
+}
+
+/* ============ GEMINI AI ============ */
+const GEMINI_MODEL = 'gemini-2.5-flash';
+let geminiKeyCache = null;
+async function sbUpsertSecret(key, value){
+  const res = await fetch(`${SB_URL}/rest/v1/admin_secrets`, {
+    method:'POST',
+    headers: authHeaders({'Prefer':'resolution=merge-duplicates,return=representation'}),
+    body: JSON.stringify({ key, value })
+  });
+  if(!res.ok) throw new Error('secret save failed');
+  return await res.json();
+}
+async function getGeminiKey(force){
+  if(geminiKeyCache && !force) return geminiKeyCache;
+  try{
+    const res = await fetch(`${SB_URL}/rest/v1/admin_secrets?key=eq.gemini_api_key&select=value`, { headers: authHeaders() });
+    if(!res.ok) return null;
+    const rows = await res.json();
+    geminiKeyCache = rows[0] ? rows[0].value : null;
+    return geminiKeyCache;
+  }catch(e){ return null; }
+}
+async function callGemini(prompt){
+  const key = await getGeminiKey();
+  if(!key) throw new Error('NO_KEY');
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
+    method:'POST',
+    headers: { 'Content-Type':'application/json', 'x-goog-api-key': key },
+    body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] })
+  });
+  if(!res.ok){
+    if(res.status === 400 || res.status === 403) throw new Error('BAD_KEY');
+    throw new Error('GEMINI_FAILED');
+  }
+  const data = await res.json();
+  return (data.candidates && data.candidates[0] && data.candidates[0].content &&
+          data.candidates[0].content.parts && data.candidates[0].content.parts[0] &&
+          data.candidates[0].content.parts[0].text) || '';
+}
+function extractJsonArray(text){
+  const cleaned = text.replace(/```json/gi,'').replace(/```/g,'').trim();
+  const match = cleaned.match(/\[[\s\S]*\]/);
+  if(!match) throw new Error('No JSON array found in AI response');
+  return JSON.parse(match[0]);
+}
+window.openGeminiKeyForm = function(){
+  openModal(`
+    <div class="modal-head"><h3>🔑 AI Settings</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <p style="font-size:12.5px; color:var(--muted); line-height:1.5; margin:-4px 0 16px;">
+      Powers AI-generated quizzes and study guides. Get a free key at
+      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:var(--teal);">aistudio.google.com/apikey</a> — no credit card needed.
+    </p>
+    <div class="field"><label class="f-label">GEMINI API KEY</label><input type="password" id="geminiKeyInput" placeholder="AIza..." /></div>
+    <button class="primary" onclick="submitGeminiKey()">Save Key</button>
+  `);
+}
+window.submitGeminiKey = async function(){
+  const val = document.getElementById('geminiKeyInput').value.trim();
+  if(!val){ showToast('Paste your API key first'); return; }
+  try{
+    await sbUpsertSecret('gemini_api_key', val);
+    geminiKeyCache = val;
+    closeModal(); showToast('AI key saved ✓');
+  }catch(e){ showToast('Failed to save — check connection'); }
 }
 async function sbDelete(table, id){
   const res = await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
@@ -681,6 +750,21 @@ async function loadAll(){
     const rows = await sbSelect('comments','ts.desc');
     data.comments = rows.map(r=>({ id:r.id, name:r.name, content:r.content, ts:Number(r.ts) }));
   }catch(e){ data.comments = []; }
+
+  try{
+    const rows = await sbSelect('quizzes','ts.desc');
+    data.quizzes = rows.map(r=>({ id:r.id, code:r.code, title:r.title, source:r.source, ts:Number(r.ts) }));
+  }catch(e){ data.quizzes = []; }
+
+  try{
+    const rows = await sbSelect('quiz_questions','order_num.asc');
+    data.quizQuestions = rows.map(r=>({ id:r.id, quiz_id:r.quiz_id, question:r.question, options:r.options, correct_index:r.correct_index, order:r.order_num }));
+  }catch(e){ data.quizQuestions = []; }
+
+  try{
+    const rows = await sbSelect('study_guides','ts.desc');
+    data.studyGuides = rows.map(r=>({ id:r.id, code:r.code, title:r.title, content:r.content, ts:Number(r.ts) }));
+  }catch(e){ data.studyGuides = []; }
 
   try{
     const rows = await sbSelect('chat_messages','ts.asc');
@@ -1137,7 +1221,7 @@ window.signOutUser = async function(){
 
 /* ============ RENDER: ROOT ============ */
 function render(){
-  const NAV_MAP = { today:'today', board:'board', assignments:'assignments', timetable:'timetable', more:['more','materials','cgpa','faq','polls','directory','suggestions','syllabus','exams','comments','chat','stats'] };
+  const NAV_MAP = { today:'today', board:'board', assignments:'assignments', timetable:'timetable', more:['more','materials','cgpa','faq','polls','directory','suggestions','syllabus','exams','comments','chat','stats','quiz','studyguide'] };
   document.querySelectorAll('nav.tabs button').forEach(b=>{
     const target = NAV_MAP[b.dataset.tab];
     const isActive = Array.isArray(target) ? target.includes(activeTab) : target === activeTab;
@@ -1165,6 +1249,8 @@ function render(){
   else if(activeTab==='exams') main.innerHTML = renderExams();
   else if(activeTab==='comments') main.innerHTML = renderComments();
   else if(activeTab==='chat'){ main.innerHTML = renderChat(); scrollChatToBottom(); }
+  else if(activeTab==='quiz') main.innerHTML = renderQuiz();
+  else if(activeTab==='studyguide') main.innerHTML = renderStudyGuides();
   else if(activeTab==='cgpa') main.innerHTML = renderCgpa();
   else if(activeTab==='more') main.innerHTML = renderMore();
   else if(activeTab==='stats') main.innerHTML = renderStats();
@@ -1218,12 +1304,15 @@ function renderMore(){
     { tab:'exams', icon:'🎯', label:'Exam Countdown', desc:'Upcoming tests & exams per course' },
     { tab:'comments', icon:'💡', label:'Ideas & Comments', desc:'Share ideas with the class' },
     { tab:'chat', icon:'💬', label:'Live Chat', desc:'Real-time class chat room' },
+    { tab:'quiz', icon:'🧠', label:'Quiz Box', desc:'Test yourself per course' },
+    { tab:'studyguide', icon:'📘', label:'AI Study Guide', desc:'Summaries generated per course' },
   ];
   if(isAdmin){
     items.push({ tab:'stats', icon:'📊', label:'Admin Stats', desc:'Signups & activity (admins only)' });
   }
   return `
     <div class="sec-head"><h2>⋯ More</h2></div>
+    ${isAdmin?`<button class="ghost" style="margin-bottom:14px;" onclick="openGeminiKeyForm()">🔑 AI Settings (set Gemini key)</button>`:''}
     ${items.map(i=>`
       <div class="card more-item" onclick="goTab('${i.tab}')" role="button" tabindex="0">
         <span class="more-icon">${i.icon}</span>
@@ -2399,6 +2488,346 @@ window.deleteChatMessage = async function(id){
     await sbDelete('chat_messages', id);
     data.chatMessages = data.chatMessages.filter(m=>m.id!==id);
     renderChatMessagesOnly();
+  }catch(e){ showToast('Failed to delete — try again'); }
+}
+
+/* ============ QUIZ BOX ============ */
+let quizView = 'list'; // list | detail | take | manage
+let quizActiveId = null;
+let quizTakeAnswers = {};
+let quizTakeResult = null;
+let editingQuestion = null;
+let editingGuide = null;
+
+function questionsForQuiz(quizId){
+  return data.quizQuestions.filter(q=>q.quiz_id===quizId).sort((a,b)=>(a.order||0)-(b.order||0));
+}
+window.backToQuizList = function(){ quizView='list'; quizActiveId=null; render(); }
+window.openQuizDetail = function(id){ quizView='detail'; quizActiveId=id; render(); }
+window.startQuiz = function(id){ quizView='take'; quizActiveId=id; quizTakeAnswers={}; quizTakeResult=null; render(); }
+window.manageQuiz = function(id){ quizView='manage'; quizActiveId=id; render(); }
+window.selectQuizAnswer = function(qId, idx){ quizTakeAnswers[qId]=idx; render(); }
+window.submitQuizAttempt = async function(){
+  const qs = questionsForQuiz(quizActiveId);
+  let score = 0;
+  qs.forEach(q=>{ if(quizTakeAnswers[q.id] === q.correct_index) score++; });
+  quizTakeResult = { score, total: qs.length };
+  try{
+    await sbInsert('quiz_attempts', { id:uid(), quiz_id:quizActiveId, user_id: myProfile.id, score, total: qs.length, ts:Date.now() });
+  }catch(e){}
+  render();
+}
+
+function renderQuiz(){
+  if(quizView === 'take') return renderQuizTake();
+  if(quizView === 'detail') return renderQuizDetailView();
+  if(quizView === 'manage' && isAdmin) return renderQuizManage();
+  return renderQuizList();
+}
+function renderQuizList(){
+  const byCode = {};
+  data.quizzes.forEach(q=>{ (byCode[q.code]=byCode[q.code]||[]).push(q); });
+  const codes = Object.keys(byCode).sort();
+  const list = codes.length ? codes.map(code=>`
+    <div class="sec-head" style="margin-top:18px;"><h2 style="font-size:14px;"><span class="chip" style="background:${colorForCode(code)}22;color:${colorForCode(code)}">${esc(code)}</span></h2></div>
+    ${byCode[code].map(q=>{
+      const count = questionsForQuiz(q.id).length;
+      return `
+      <div class="card" onclick="openQuizDetail('${q.id}')" style="cursor:pointer;">
+        <p class="ann-title">${esc(q.title)}</p>
+        <div class="ann-foot">
+          <span>${count} question${count===1?'':'s'} ${q.source==='ai'?'· ✨ AI-generated':''}</span>
+        </div>
+      </div>`;
+    }).join('')}
+  `).join('') : `<div class="empty">No quizzes yet.</div>`;
+
+  return `
+    <button class="back-link" onclick="goTab('more')">← More</button>
+    <div class="sec-head">
+      <h2>🧠 Quiz Box</h2>
+      ${isAdmin?`<span><button class="del-btn" style="color:var(--teal)" onclick="openQuizAIForm()">✨ AI</button> <button class="add-btn" onclick="openQuizManualForm()">+</button></span>`:''}
+    </div>
+    ${list}
+  `;
+}
+function renderQuizDetailView(){
+  const q = data.quizzes.find(x=>x.id===quizActiveId);
+  if(!q) return `<div class="empty">Quiz not found.</div>`;
+  const count = questionsForQuiz(q.id).length;
+  return `
+    <button class="back-link" onclick="backToQuizList()">← Quiz Box</button>
+    <div class="card">
+      <span class="chip" style="background:${colorForCode(q.code)}22;color:${colorForCode(q.code)}">${esc(q.code)}</span>
+      <p class="ann-title" style="margin-top:8px;">${esc(q.title)}</p>
+      <p class="ann-body">${count} question${count===1?'':'s'} ${q.source==='ai'?'· ✨ AI-generated':'· ✍️ manually created'}</p>
+      <button class="primary" style="margin-top:10px;" onclick="startQuiz('${q.id}')" ${count===0?'disabled':''}>${count===0?'No questions yet':'Start Quiz'}</button>
+      ${isAdmin?`
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <button class="ghost" onclick="manageQuiz('${q.id}')">Manage Questions</button>
+          <button class="ghost" style="color:var(--red); border-color:var(--red)66;" onclick="deleteQuiz('${q.id}')">Delete Quiz</button>
+        </div>` : ''}
+    </div>
+  `;
+}
+function renderQuizTake(){
+  const q = data.quizzes.find(x=>x.id===quizActiveId);
+  const qs = questionsForQuiz(quizActiveId);
+  if(!q) return `<div class="empty">Quiz not found.</div>`;
+
+  if(quizTakeResult){
+    const pct = Math.round((quizTakeResult.score/quizTakeResult.total)*100);
+    return `
+      <button class="back-link" onclick="backToQuizList()">← Quiz Box</button>
+      <div class="card" style="text-align:center; padding:28px 20px;">
+        <p style="font-size:12px; color:var(--muted); margin:0 0 6px;">YOUR SCORE</p>
+        <p class="mono" style="font-size:44px; font-weight:800; color:var(--yellow); margin:0;">${quizTakeResult.score}/${quizTakeResult.total}</p>
+        <p style="color:var(--muted); font-size:13px; margin-top:6px;">${pct}% correct</p>
+        <button class="primary" style="margin-top:18px;" onclick="startQuiz('${q.id}')">Retake Quiz</button>
+        <button class="ghost" style="margin-top:10px;" onclick="backToQuizList()">Back to Quiz Box</button>
+      </div>`;
+  }
+
+  const allAnswered = qs.every(qq => quizTakeAnswers[qq.id] !== undefined);
+  return `
+    <button class="back-link" onclick="backToQuizList()">← Quiz Box</button>
+    <div class="sec-head"><h2 style="font-size:16px;">${esc(q.title)}</h2></div>
+    ${qs.map((qq,i)=>`
+      <div class="card">
+        <p style="font-weight:700; font-size:13.5px; margin:0 0 12px;">${i+1}. ${esc(qq.question)}</p>
+        ${(qq.options||[]).map((opt,idx)=>`
+          <div class="poll-opt"><button onclick="selectQuizAnswer('${qq.id}', ${idx})" style="${quizTakeAnswers[qq.id]===idx?`border-color:var(--yellow); background:${'var(--yellow)'}22;`:''}">
+            <span class="txt">${esc(opt)}</span>${quizTakeAnswers[qq.id]===idx?'<span>✓</span>':''}
+          </button></div>
+        `).join('')}
+      </div>
+    `).join('')}
+    <button class="primary" ${allAnswered?'':'disabled'} onclick="submitQuizAttempt()">${allAnswered?'Submit Quiz':`Answer all questions (${Object.keys(quizTakeAnswers).length}/${qs.length})`}</button>
+  `;
+}
+function renderQuizManage(){
+  const q = data.quizzes.find(x=>x.id===quizActiveId);
+  if(!q) return `<div class="empty">Quiz not found.</div>`;
+  const qs = questionsForQuiz(q.id);
+  return `
+    <button class="back-link" onclick="openQuizDetail('${q.id}')">← ${esc(q.title)}</button>
+    <div class="sec-head">
+      <h2 style="font-size:15px;">Manage Questions</h2>
+      <button class="add-btn" onclick="openQuestionForm('${q.id}')">+</button>
+    </div>
+    ${qs.length ? qs.map((qq,i)=>`
+      <div class="card">
+        <p style="font-weight:700; font-size:13.5px; margin:0 0 8px;">${i+1}. ${esc(qq.question)}</p>
+        ${(qq.options||[]).map((opt,idx)=>`<p style="font-size:12.5px; margin:2px 0; color:${idx===qq.correct_index?'var(--green)':'var(--muted)'};">${idx===qq.correct_index?'✓ ':'　'}${esc(opt)}</p>`).join('')}
+        <div class="ann-foot" style="margin-top:8px;"><span></span><span><button class="del-btn" style="color:var(--teal)" onclick="openQuestionForm('${q.id}','${qq.id}')">Edit</button> <button class="del-btn" onclick="deleteQuestion('${qq.id}')">Delete</button></span></div>
+      </div>
+    `).join('') : `<div class="empty">No questions yet — add one above.</div>`}
+  `;
+}
+window.openQuestionForm = function(quizId, questionId){
+  editingQuestion = questionId || null;
+  const existing = questionId ? data.quizQuestions.find(q=>q.id===questionId) : null;
+  const opts = existing ? existing.options : ['','','',''];
+  openModal(`
+    <div class="modal-head"><h3>${existing?'Edit':'New'} Question</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <input type="hidden" id="qQuizId" value="${quizId}" />
+    <div class="field"><label class="f-label">QUESTION</label><textarea id="qText">${existing?esc(existing.question):''}</textarea></div>
+    ${[0,1,2,3].map(i=>`
+      <div class="field" style="display:flex; align-items:center; gap:10px;">
+        <input type="radio" name="qCorrect" value="${i}" ${existing&&existing.correct_index===i?'checked':''} style="width:18px; height:18px; accent-color:var(--teal); flex:none;" />
+        <input id="qOpt${i}" placeholder="Option ${i+1}" value="${escAttr(opts[i]||'')}" style="flex:1;" />
+      </div>
+    `).join('')}
+    <p style="font-size:11.5px; color:var(--muted); margin:-4px 0 14px;">Tap the circle next to the correct answer.</p>
+    <button class="primary" onclick="submitQuestion()">${existing?'Save changes':'Add question'}</button>
+  `);
+}
+window.submitQuestion = async function(){
+  const quizId = document.getElementById('qQuizId').value;
+  const question = document.getElementById('qText').value.trim();
+  const options = [0,1,2,3].map(i=>document.getElementById('qOpt'+i).value.trim());
+  const correctEl = document.querySelector('input[name="qCorrect"]:checked');
+  if(!question || options.some(o=>!o) || !correctEl){ showToast('Fill the question, all 4 options, and pick the correct one'); return; }
+  const correct_index = parseInt(correctEl.value);
+  try{
+    if(editingQuestion){
+      await sbUpdate('quiz_questions', editingQuestion, { question, options, correct_index });
+      const item = data.quizQuestions.find(q=>q.id===editingQuestion);
+      if(item){ item.question=question; item.options=options; item.correct_index=correct_index; }
+      editingQuestion = null;
+    } else {
+      const order = questionsForQuiz(quizId).length;
+      const row = { id:uid(), quiz_id:quizId, question, options, correct_index, order };
+      await sbInsert('quiz_questions', { id:row.id, quiz_id:quizId, question, options, correct_index, order_num:order });
+      data.quizQuestions.push(row);
+    }
+    closeModal(); showToast('Saved ✓'); render();
+  }catch(e){ showToast('Failed to save — check connection'); }
+}
+window.deleteQuestion = async function(id){
+  try{
+    await sbDelete('quiz_questions', id);
+    data.quizQuestions = data.quizQuestions.filter(q=>q.id!==id);
+    render();
+  }catch(e){ showToast('Failed to delete — try again'); }
+}
+window.deleteQuiz = async function(id){
+  try{
+    await sbDelete('quizzes', id);
+    data.quizzes = data.quizzes.filter(q=>q.id!==id);
+    data.quizQuestions = data.quizQuestions.filter(q=>q.quiz_id!==id);
+    backToQuizList();
+  }catch(e){ showToast('Failed to delete — try again'); }
+}
+window.openQuizManualForm = function(){
+  openModal(`
+    <div class="modal-head"><h3>New Quiz</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <div class="field"><label class="f-label">COURSE CODE</label><input id="newQuizCode" placeholder="e.g. CSC101" /></div>
+    <div class="field"><label class="f-label">TITLE</label><input id="newQuizTitle" placeholder="e.g. Chapter 3 Quiz" /></div>
+    <button class="primary" onclick="submitQuizManual()">Create & Add Questions</button>
+  `);
+}
+window.submitQuizManual = async function(){
+  const code = document.getElementById('newQuizCode').value.trim().toUpperCase();
+  const title = document.getElementById('newQuizTitle').value.trim();
+  if(!code || !title){ showToast('Fill course and title'); return; }
+  const row = { id:uid(), code, title, source:'manual', ts:Date.now() };
+  try{
+    await sbInsert('quizzes', row);
+    data.quizzes.push(row);
+    closeModal(); showToast('Quiz created ✓'); manageQuiz(row.id);
+  }catch(e){ showToast('Failed to create — check connection'); }
+}
+window.openQuizAIForm = async function(){
+  const hasKey = await getGeminiKey();
+  openModal(`
+    <div class="modal-head"><h3>✨ Generate Quiz with AI</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    ${!hasKey?`<p style="font-size:12.5px; color:var(--amber,#FBBF24); margin:-4px 0 14px;">No AI key set yet. <a onclick="closeModal();openGeminiKeyForm();" style="color:var(--teal); cursor:pointer;">Set it up</a> first.</p>`:''}
+    <div class="field"><label class="f-label">COURSE CODE</label><input id="aiQuizCode" placeholder="e.g. CSC101" /></div>
+    <div class="field"><label class="f-label">TITLE</label><input id="aiQuizTitle" placeholder="e.g. Recursion & Loops Quiz" /></div>
+    <div class="field"><label class="f-label">TOPIC / PASTE NOTES</label><textarea id="aiQuizTopic" placeholder="e.g. Recursion, base cases, and how loops relate to recursive functions (paste lecture notes here for best results)"></textarea></div>
+    <div class="field"><label class="f-label">NUMBER OF QUESTIONS</label><input type="number" id="aiQuizCount" value="5" min="3" max="10" /></div>
+    <button class="primary" id="aiQuizGenBtn" onclick="submitQuizAI()">Generate</button>
+  `);
+}
+window.submitQuizAI = async function(){
+  const code = document.getElementById('aiQuizCode').value.trim().toUpperCase();
+  const title = document.getElementById('aiQuizTitle').value.trim();
+  const topic = document.getElementById('aiQuizTopic').value.trim();
+  const count = Math.max(3, Math.min(10, parseInt(document.getElementById('aiQuizCount').value) || 5));
+  if(!code || !title || !topic){ showToast('Fill course, title, and topic/notes'); return; }
+  const btn = document.getElementById('aiQuizGenBtn');
+  if(btn){ btn.textContent = 'Generating…'; btn.disabled = true; }
+  try{
+    const prompt = `Generate ${count} multiple-choice quiz questions for a 100-level Nigerian university course "${code}" on this topic/material:\n\n${topic}\n\nReturn ONLY a valid JSON array, no markdown, no explanation, in exactly this format:\n[{"question":"...","options":["...","...","...","..."],"correct_index":0}]\nEach question must have exactly 4 options and correct_index between 0-3.`;
+    const text = await callGemini(prompt);
+    const parsed = extractJsonArray(text);
+    if(!parsed.length) throw new Error('empty');
+
+    const quizRow = { id:uid(), code, title, source:'ai', ts:Date.now() };
+    await sbInsert('quizzes', quizRow);
+    data.quizzes.push(quizRow);
+
+    let order = 0;
+    for(const q of parsed){
+      if(!q.question || !Array.isArray(q.options) || q.options.length !== 4) continue;
+      const qRow = { id:uid(), quiz_id:quizRow.id, question:q.question, options:q.options, correct_index: q.correct_index||0, order: order++ };
+      await sbInsert('quiz_questions', { id:qRow.id, quiz_id:quizRow.id, question:qRow.question, options:qRow.options, correct_index:qRow.correct_index, order_num:qRow.order });
+      data.quizQuestions.push(qRow);
+    }
+    closeModal(); showToast('Quiz generated ✓'); manageQuiz(quizRow.id);
+  }catch(e){
+    if(e.message === 'NO_KEY') showToast('Set your AI key first (More → this quiz form)');
+    else if(e.message === 'BAD_KEY') showToast('AI key rejected — check it in AI Settings');
+    else showToast('AI generation failed — try again');
+    if(btn){ btn.textContent = 'Generate'; btn.disabled = false; }
+  }
+}
+
+/* ============ AI STUDY GUIDE ============ */
+let openGuideId = null;
+function renderStudyGuides(){
+  const byCode = {};
+  data.studyGuides.forEach(g=>{ (byCode[g.code]=byCode[g.code]||[]).push(g); });
+  const codes = Object.keys(byCode).sort();
+  const list = codes.length ? codes.map(code=>`
+    <div class="sec-head" style="margin-top:18px;"><h2 style="font-size:14px;"><span class="chip" style="background:${colorForCode(code)}22;color:${colorForCode(code)}">${esc(code)}</span></h2></div>
+    ${byCode[code].map(g=>`
+      <div class="card">
+        <p class="faq-title" onclick="toggleGuide('${g.id}')">${esc(g.title)} <span>${openGuideId===g.id?'−':'+'}</span></p>
+        ${openGuideId===g.id?`
+          <p class="ann-body" style="white-space:pre-wrap;">${esc(g.content)}</p>
+          ${isAdmin?`<div class="ann-foot" style="margin-top:8px;"><span></span><span><button class="del-btn" style="color:var(--teal)" onclick="openGuideForm('${g.id}')">Edit</button> <button class="del-btn" onclick="deleteGuide('${g.id}')">Delete</button></span></div>`:''}
+        `:''}
+      </div>
+    `).join('')}
+  `).join('') : `<div class="empty">No study guides yet.</div>`;
+
+  return `
+    <button class="back-link" onclick="goTab('more')">← More</button>
+    <div class="sec-head">
+      <h2>📘 AI Study Guide</h2>
+      ${isAdmin?`<button class="add-btn" onclick="openGuideForm()">+</button>`:''}
+    </div>
+    ${list}
+  `;
+}
+window.toggleGuide = function(id){ openGuideId = (openGuideId===id) ? null : id; render(); }
+window.openGuideForm = function(id){
+  editingGuide = id || null;
+  const existing = id ? data.studyGuides.find(g=>g.id===id) : null;
+  openModal(`
+    <div class="modal-head"><h3>${existing?'Edit':'New'} Study Guide</h3><button class="close-x" onclick="closeModal()">×</button></div>
+    <div class="field"><label class="f-label">COURSE CODE</label><input id="guideCode" placeholder="e.g. CSC101" value="${existing?escAttr(existing.code):''}" /></div>
+    <div class="field"><label class="f-label">TITLE</label><input id="guideTitle" placeholder="e.g. Midterm Review — Recursion" value="${existing?escAttr(existing.title):''}" /></div>
+    <div class="field"><label class="f-label">TOPIC / PASTE NOTES (for AI generation)</label><textarea id="guideTopic" placeholder="What should the guide cover? Paste lecture notes for best results."></textarea></div>
+    <button class="ghost" id="guideGenBtn" onclick="generateGuideContent()" style="margin-bottom:14px;">✨ Generate with AI</button>
+    <div class="field"><label class="f-label">CONTENT</label><textarea id="guideContent" style="min-height:160px;" placeholder="AI-generated content will appear here — or write your own.">${existing?esc(existing.content):''}</textarea></div>
+    <button class="primary" onclick="submitGuide()">${existing?'Save changes':'Save Study Guide'}</button>
+  `);
+}
+window.generateGuideContent = async function(){
+  const code = document.getElementById('guideCode').value.trim();
+  const topic = document.getElementById('guideTopic').value.trim();
+  if(!topic){ showToast('Add a topic or paste notes first'); return; }
+  const btn = document.getElementById('guideGenBtn');
+  if(btn){ btn.textContent = 'Generating…'; btn.disabled = true; }
+  try{
+    const prompt = `Write a clear, well-organized study guide for 100-level Nigerian university students in course "${code}" on this topic/material:\n\n${topic}\n\nUse plain text with clear section headers and short bullet points (use "-" for bullets). Keep it focused, exam-relevant, and easy to read on a phone. Do not use markdown asterisks or hashtags.`;
+    const text = await callGemini(prompt);
+    document.getElementById('guideContent').value = text.trim();
+    showToast('Generated ✓ — review and save');
+  }catch(e){
+    if(e.message === 'NO_KEY') showToast('Set your AI key first');
+    else if(e.message === 'BAD_KEY') showToast('AI key rejected — check AI Settings');
+    else showToast('AI generation failed — try again');
+  }
+  if(btn){ btn.textContent = '✨ Generate with AI'; btn.disabled = false; }
+}
+window.submitGuide = async function(){
+  const code = document.getElementById('guideCode').value.trim().toUpperCase();
+  const title = document.getElementById('guideTitle').value.trim();
+  const content = document.getElementById('guideContent').value.trim();
+  if(!code || !title || !content){ showToast('Fill course, title, and content'); return; }
+  try{
+    if(editingGuide){
+      await sbUpdate('study_guides', editingGuide, { code, title, content });
+      const item = data.studyGuides.find(g=>g.id===editingGuide);
+      if(item){ item.code=code; item.title=title; item.content=content; }
+      editingGuide = null;
+    } else {
+      const row = { id:uid(), code, title, content, ts:Date.now() };
+      await sbInsert('study_guides', row);
+      data.studyGuides.push(row);
+    }
+    closeModal(); showToast('Saved ✓'); render();
+  }catch(e){ showToast('Failed to save — check connection'); }
+}
+window.deleteGuide = async function(id){
+  try{
+    await sbDelete('study_guides', id);
+    data.studyGuides = data.studyGuides.filter(g=>g.id!==id);
+    render();
   }catch(e){ showToast('Failed to delete — try again'); }
 }
 
