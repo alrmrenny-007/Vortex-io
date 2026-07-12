@@ -1106,6 +1106,9 @@ function render(){
   else if(activeTab==='chat'){ main.innerHTML = renderChat(); scrollChatToBottom(); }
   else if(activeTab==='cgpa') main.innerHTML = renderCgpa();
   else if(activeTab==='more') main.innerHTML = renderMore();
+
+  // Universal clearance so the bottom nav never overlaps the last item on any tab
+  main.insertAdjacentHTML('beforeend', '<div style="height:70px;"></div>');
 }
 function animatedRender(){
   const main = document.getElementById('main');
@@ -1165,7 +1168,6 @@ function renderMore(){
         </div>
         <span class="more-arrow">→</span>
       </div>`).join('')}
-    <div style="height:56px;"></div>
   `;
 }
 
