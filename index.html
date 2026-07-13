@@ -388,8 +388,10 @@ button.ghost{
   position:fixed; top:14px; left:50%; transform:translateX(-50%);
   background:var(--green); color:#0e2513; padding:10px 18px; border-radius:12px; font-size:13.5px;
   font-weight:700; z-index:200; opacity:0; transition:opacity .25s;
+  max-width:90vw; text-align:center; word-break:break-word;
 }
 .toast.show{opacity:1;}
+.toast.toast-error{ background:var(--red); color:#fff; }
 
 /* LOADING */
 .loading{
@@ -503,10 +505,12 @@ function colorForCode(code){
   return COLORS[h % COLORS.length];
 }
 function uid(){ return Math.random().toString(36).slice(2,9); }
-function showToast(msg){
+function showToast(msg, isError){
   const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 1800);
+  t.textContent = msg;
+  t.classList.toggle('toast-error', !!isError);
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), isError ? 3400 : 1800);
 }
 
 /* ============ SUPABASE ============ */
@@ -582,22 +586,51 @@ async function getGeminiKey(force){
     return geminiKeyCache;
   }catch(e){ return null; }
 }
+function describeGeminiError(e){
+  const msg = e.message || '';
+  if(msg === 'NO_KEY') return 'No AI key set — go to More → AI Settings first';
+  if(msg.startsWith('BAD_KEY')) return 'AI key rejected by Google — double check it in AI Settings';
+  if(msg.startsWith('MODEL_NOT_FOUND')) return 'AI model unavailable right now — tell your developer to check the model name';
+  if(msg === 'RATE_LIMIT') return 'AI is rate-limited right now — wait a minute and try again';
+  if(msg.startsWith('EMPTY_RESPONSE')) return 'AI returned nothing usable — try shorter notes or fewer questions';
+  if(msg.startsWith('NETWORK')) return 'Network error reaching AI — check your connection';
+  return 'AI generation failed: ' + msg.slice(0,120);
+}
 async function callGemini(prompt){
   const key = await getGeminiKey();
   if(!key) throw new Error('NO_KEY');
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
-    method:'POST',
-    headers: { 'Content-Type':'application/json', 'x-goog-api-key': key },
-    body: JSON.stringify({ contents:[{ parts:[{ text: prompt }] }] })
-  });
-  if(!res.ok){
-    if(res.status === 400 || res.status === 403) throw new Error('BAD_KEY');
-    throw new Error('GEMINI_FAILED');
+  let res;
+  try{
+    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(key)}`, {
+      method:'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        contents:[{ parts:[{ text: prompt }] }],
+        generationConfig: {
+          maxOutputTokens: 4096,
+          thinkingConfig: { thinkingBudget: 0 }
+        }
+      })
+    });
+  }catch(networkErr){
+    throw new Error('NETWORK: ' + networkErr.message);
   }
-  const data = await res.json();
-  return (data.candidates && data.candidates[0] && data.candidates[0].content &&
-          data.candidates[0].content.parts && data.candidates[0].content.parts[0] &&
-          data.candidates[0].content.parts[0].text) || '';
+  const raw = await res.text();
+  if(!res.ok){
+    if(res.status === 400 || res.status === 403) throw new Error('BAD_KEY: ' + raw.slice(0,200));
+    if(res.status === 404) throw new Error('MODEL_NOT_FOUND: ' + raw.slice(0,200));
+    if(res.status === 429) throw new Error('RATE_LIMIT');
+    throw new Error('HTTP_' + res.status + ': ' + raw.slice(0,200));
+  }
+  let data;
+  try{ data = JSON.parse(raw); }catch(e){ throw new Error('BAD_JSON: ' + raw.slice(0,200)); }
+  const candidate = data.candidates && data.candidates[0];
+  const text = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text;
+  if(!text){
+    const reason = candidate ? (candidate.finishReason || 'unknown') : 'no candidates';
+    throw new Error('EMPTY_RESPONSE: finishReason=' + reason);
+  }
+  return text;
 }
 function extractJsonArray(text){
   const cleaned = text.replace(/```json/gi,'').replace(/```/g,'').trim();
@@ -2737,9 +2770,7 @@ window.submitQuizAI = async function(){
     }
     closeModal(); showToast('Quiz generated ✓'); manageQuiz(quizRow.id);
   }catch(e){
-    if(e.message === 'NO_KEY') showToast('Set your AI key first (More → this quiz form)');
-    else if(e.message === 'BAD_KEY') showToast('AI key rejected — check it in AI Settings');
-    else showToast('AI generation failed — try again');
+    showToast(describeGeminiError(e), true);
     if(btn){ btn.textContent = 'Generate'; btn.disabled = false; }
   }
 }
@@ -2798,9 +2829,7 @@ window.generateGuideContent = async function(){
     document.getElementById('guideContent').value = text.trim();
     showToast('Generated ✓ — review and save');
   }catch(e){
-    if(e.message === 'NO_KEY') showToast('Set your AI key first');
-    else if(e.message === 'BAD_KEY') showToast('AI key rejected — check AI Settings');
-    else showToast('AI generation failed — try again');
+    showToast(describeGeminiError(e), true);
   }
   if(btn){ btn.textContent = '✨ Generate with AI'; btn.disabled = false; }
 }
