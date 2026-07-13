@@ -168,6 +168,37 @@ nav.tabs button.active{color:var(--yellow);}
 .add-btn:active{transform:scale(.9);}
 .empty{color:var(--muted); font-size:13.5px; text-align:center; padding:30px 10px;}
 
+/* BUILDER CREDIT */
+.builder-credit{
+  text-align:center; margin-top:26px; padding:16px 12px 6px;
+  font-family:'Space Mono',monospace; font-size:12px; color:var(--muted);
+  display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;
+}
+.builder-credit .shimmer-text{
+  background:linear-gradient(90deg, var(--purple), var(--teal), var(--pink), var(--yellow), var(--purple));
+  background-size:300% auto;
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  animation:creditShimmer 5s linear infinite;
+  font-weight:700; font-size:12.5px;
+}
+@keyframes creditShimmer{
+  0%{background-position:0% 50%;}
+  100%{background-position:300% 50%;}
+}
+.builder-credit .sparkle{
+  display:inline-block; color:var(--yellow);
+  animation:sparklePulse 2s ease-in-out infinite;
+}
+.builder-credit .sparkle:last-child{ animation-delay:1s; }
+@keyframes sparklePulse{
+  0%,100%{ transform:scale(1) rotate(0deg); opacity:.6; }
+  50%{ transform:scale(1.35) rotate(180deg); opacity:1; }
+}
+@media (prefers-reduced-motion: reduce){
+  .builder-credit .shimmer-text{ animation:none; background-position:0% 50%; }
+  .builder-credit .sparkle{ animation:none; }
+}
+
 /* announcement */
 .ann-title{font-weight:700; font-size:15.5px; margin:0 0 4px;}
 .ann-body{font-size:13.5px; color:var(--text-soft); line-height:1.5; margin:0 0 8px; white-space:pre-wrap;}
@@ -947,10 +978,15 @@ async function subscribeToPush(){
     }
     const json = sub.toJSON();
     if(!json.endpoint || !myProfile) return false;
-    await sbInsert('push_subscriptions', {
-      id: uid(), user_id: myProfile.id, endpoint: json.endpoint,
-      p256dh: json.keys.p256dh, auth: json.keys.auth, ts: Date.now()
+    const res = await fetch(`${SB_URL}/rest/v1/push_subscriptions?on_conflict=endpoint`, {
+      method:'POST',
+      headers: authHeaders({'Prefer':'resolution=merge-duplicates,return=representation'}),
+      body: JSON.stringify({
+        id: uid(), user_id: myProfile.id, endpoint: json.endpoint,
+        p256dh: json.keys.p256dh, auth: json.keys.auth, ts: Date.now()
+      })
     });
+    if(!res.ok) throw new Error('upsert failed');
     return true;
   }catch(e){ console.error('push subscribe failed', e); return false; }
 }
@@ -1410,6 +1446,9 @@ function renderToday(){
     ${renderSemesterProgress()}
     <div class="sec-head"><h2>📚 Today's classes</h2></div>
     ${list}
+    <div class="builder-credit">
+      <span class="sparkle">✦</span> Built &amp; designed by <span class="shimmer-text">Agbo Leonard Ijurgar</span> <span class="sparkle">✦</span>
+    </div>
   `;
 }
 function renderSemesterProgress(){
