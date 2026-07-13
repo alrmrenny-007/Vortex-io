@@ -565,7 +565,7 @@ async function sbUpsertSetting(key, value){
 }
 
 /* ============ GEMINI AI ============ */
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const GEMINI_MODEL = 'gemini-3.5-flash';
 let geminiKeyCache = null;
 async function sbUpsertSecret(key, value){
   const res = await fetch(`${SB_URL}/rest/v1/admin_secrets`, {
